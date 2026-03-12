@@ -1132,9 +1132,9 @@ function App() {
                       <XAxis dataKey="year" stroke={themeClasses.chartAxis} fontSize={12} tickLine={false} axisLine={false} dy={10} />
                       <YAxis tickFormatter={(val: number) => `€${val/1000}k`} stroke={themeClasses.chartAxis} fontSize={12} tickLine={false} axisLine={false} dx={-5} />
                       <Tooltip
-                        formatter={(value: any, name: string) => [
+                        formatter={(value: any, name: string | undefined) => [
                           formatPrice(Number(value)),
-                          name === 'avg_price' ? 'Mediana' : name === 'q75' ? 'Q75 (75°)' : name === 'q25' ? 'Q25 (25°)' : name
+                          name === 'avg_price' ? 'Mediana' : name === 'q75' ? 'Q75 (75°)' : name === 'q25' ? 'Q25 (25°)' : (name ?? '')
                         ]}
                         labelFormatter={(label) => `Anno costruzione: ${label}`}
                         contentStyle={{ backgroundColor: themeClasses.tooltipBg, border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '12px', color: themeClasses.tooltipText, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
