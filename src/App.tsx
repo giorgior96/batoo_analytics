@@ -32,7 +32,8 @@ type SortOrder = 'year_desc' | 'price_asc' | 'price_desc';
 type Toast = { id: string; message: string; type: 'success' | 'error' | 'info' };
 
 // --- Constants ---
-const API_BASE_URL = 'http://127.0.0.1:8001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001';
+
 const RECENT_SEARCHES_KEY = 'batoo_recent_searches';
 const SOURCE_COLORS: Record<string, string> = {
   boat24: '#3b82f6', yachtall: '#8b5cf6', mondialbroker: '#10b981',
