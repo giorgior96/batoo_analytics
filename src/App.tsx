@@ -211,7 +211,7 @@ function App() {
     const timeoutId = setTimeout(() => {
       axios.get(`${API_BASE_URL}/suggestions?q=${encodeURIComponent(searchQuery)}`)
         .then(res => {
-          const newSuggestions = [`${searchQuery} (cerca tutti)`, ...res.data];
+          const newSuggestions = [`${searchQuery} (${lang === 'it' ? 'cerca tutti' : 'search all'})`, ...res.data];
           setSuggestions(newSuggestions);
           // Mostra i suggerimenti solo se l'input è l'elemento attualmente a fuoco
           if (document.activeElement && document.activeElement.tagName === 'INPUT') {
@@ -245,7 +245,7 @@ function App() {
     } catch (err: any) {
       setResult(null);
       setError(err.response?.data?.detail || 'Errore durante la valutazione.');
-      addToast('Errore nella ricerca', 'error');
+      addToast(lang === 'it' ? 'Errore nella ricerca' : 'Search error', 'error');
     } finally {
       setLoading(false);
     }
@@ -265,7 +265,7 @@ function App() {
       addToast(`${res.data.total_listings} annunci trovati per questa fonte`, 'success');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Errore ricerca broker.');
-      addToast('Errore nella ricerca broker', 'error');
+      addToast(lang === 'it' ? 'Errore nella ricerca broker' : 'Broker search error', 'error');
     } finally {
       setBrokerLoading(false);
     }
@@ -290,7 +290,7 @@ function App() {
       addToast(`${res.data.total_listings} annunci trovati per "${res.data.seller}"`, 'success');
     } catch (err: any) {
       setError(err.response?.data?.detail || `Nessun dato per "${name}"`);
-      addToast('Agenzia non trovata nel database', 'error');
+      addToast(lang === 'it' ? 'Agenzia non trovata nel database' : 'Agency not found in database', 'error');
     } finally {
       setSellerLoading(false);
     }
@@ -317,7 +317,7 @@ function App() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    const query = suggestion.endsWith(' (cerca tutti)') ? suggestion.replace(' (cerca tutti)', '') : suggestion;
+    const query = suggestion.endsWith(` (${lang === 'it' ? 'cerca tutti' : 'search all'})`) ? suggestion.replace(` (${lang === 'it' ? 'cerca tutti' : 'search all'})`, '') : suggestion;
     setSearchQuery(query);
     handleEvaluate(undefined, query);
   };
@@ -330,7 +330,7 @@ function App() {
     document.title = `Batoo-Report-${result.query.replace(/\s+/g, '-')}`;
     window.print();
     document.title = printConfig;
-    addToast('Report PDF in elaborazione...', 'info');
+    addToast(lang === 'it' ? 'Report PDF in elaborazione...' : 'Processing PDF report...', 'info');
   };
 
 
@@ -374,50 +374,50 @@ function App() {
       <div className={`no-print absolute inset-0 bg-gradient-to-b ${themeClasses.overlay} z-0 pointer-events-none transition-colors duration-500`}></div>
 
       {/* Pulsante Tema e Lingua */}
-      <div className="no-print absolute top-6 right-6 z-50 flex gap-2">
+      <div className="no-print fixed top-3 right-3 sm:top-6 sm:right-6 z-50 flex gap-1.5 sm:gap-2">
         <button
           onClick={toggleLang}
-          className={`p-3 rounded-full backdrop-blur-xl border transition-all duration-300 font-bold text-sm flex items-center justify-center min-w-[46px] ${isDark ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-md'}`}
+          className={`p-2 sm:p-3 rounded-full backdrop-blur-xl border transition-all duration-300 font-bold text-xs sm:text-sm flex items-center justify-center min-w-[36px] sm:min-w-[46px] ${isDark ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700' : 'bg-white/90 border-slate-200 text-slate-600 hover:bg-slate-50 shadow-md'}`}
           title={lang === "it" ? "Passa a Inglese" : "Switch to Italian"}
         >
           {lang.toUpperCase()}
         </button>
         <button
           onClick={toggleTheme}
-          className={`p-3 rounded-full backdrop-blur-xl border transition-all duration-300 ${isDark ? 'bg-slate-800/80 border-slate-700 text-yellow-400 hover:bg-slate-700' : 'bg-white border-slate-200 text-indigo-600 hover:bg-slate-50 shadow-md'}`}
+          className={`p-2 sm:p-3 rounded-full backdrop-blur-xl border transition-all duration-300 ${isDark ? 'bg-slate-800/80 border-slate-700 text-yellow-400 hover:bg-slate-700' : 'bg-white/90 border-slate-200 text-indigo-600 hover:bg-slate-50 shadow-md'}`}
         >
-          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
         </button>
       </div>
       {/* Area Contenuto Principale */}
-      <main className={`relative z-10 flex-1 flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full transition-all duration-700 ease-in-out ${result ? 'justify-start pt-8 pb-20' : 'justify-center'}`}>
+      <main className={`relative z-10 flex-1 flex flex-col items-center px-3 sm:px-6 lg:px-8 w-full transition-all duration-700 ease-in-out ${result ? 'justify-start pt-6 pb-20' : 'justify-center pt-16 sm:pt-0'}`}>
         
         {/* Titolo e Logo */}
-        <div className={`no-print text-center transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${result ? 'mb-6 transform scale-75 origin-top' : 'mb-12'}`}>
-          <div className="flex flex-col items-center justify-center mb-4">
+        <div className={`no-print text-center transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] ${result ? 'mb-4 transform scale-75 origin-top' : 'mb-8 sm:mb-12'}`}>
+          <div className="flex flex-col items-center justify-center mb-3 sm:mb-4">
             <img 
               src="https://batoo.it/icons/batoo-logo-dark.svg?dpl=dpl_9aCViBvDC47Q54fZ2iSr4nXE9S5q" 
               alt="Batoo Logo" 
-              className={`h-16 md:h-20 mb-2 ${isDark && 'invert'}`} 
+              className={`h-12 sm:h-16 md:h-20 mb-2 ${isDark && 'invert'}`} 
             />
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter">
               Price <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-400">Engine</span>
             </h1>
           </div>
           {!result && (
             <div className="animate-[fadeInUp_0.5s_ease-out]">
-              <div className="inline-flex flex-col items-center justify-center mb-6 py-2 px-6 rounded-2xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm">
-                <span className={`text-xs font-bold uppercase tracking-widest ${themeClasses.textSubtle} mb-1`}>Database Aggiornato</span>
+              <div className="inline-flex flex-col items-center justify-center mb-4 sm:mb-6 py-2 px-4 sm:px-6 rounded-2xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm">
+                <span className={`text-xs font-bold uppercase tracking-widest ${themeClasses.textSubtle} mb-1`}>{lang === 'it' ? 'Database Aggiornato' : 'Database Updated'}</span>
                 <div className="flex items-baseline space-x-2">
-                  <span className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                     {totalBoatsDB > 0 ? <AnimatedCounter end={totalBoatsDB} duration={2500} /> : <span className="opacity-50">...</span>}
                   </span>
-                  <span className={`text-sm font-semibold ${themeClasses.textMuted}`}>+ barche analizzate</span>
+                  <span className={`text-sm font-semibold ${themeClasses.textMuted}`}>{lang === 'it' ? '+ barche analizzate' : '+ boats analyzed'}</span>
                 </div>
               </div>
-              <p className={`text-lg md:text-xl ${themeClasses.textMuted} max-w-xl mx-auto font-light leading-relaxed`}>
-                L'intelligenza artificiale per il mercato nautico.<br className="hidden md:block"/> 
-                Scopri il valore reale di qualsiasi barca istantaneamente.
+              <p className={`text-base sm:text-lg md:text-xl ${themeClasses.textMuted} max-w-xl mx-auto font-light leading-relaxed px-2`}>
+                {lang === 'it' ? "L'intelligenza artificiale per il mercato nautico." : "Artificial intelligence for the nautical market."}<br className="hidden md:block"/> 
+                {lang === 'it' ? "Scopri il valore reale di qualsiasi barca istantaneamente." : "Discover the real value of any boat instantly."}
               </p>
             </div>
           )}
@@ -498,14 +498,14 @@ function App() {
                     </button>
                     {/* Divider con label */}
                     <p className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest ${themeClasses.textSubtle} border-b ${themeClasses.cardBorder}`}>
-                      Oppure scegli un'agenzia specifica:
+                      {lang === 'it' ? "Oppure scegli un'agenzia specifica:" : "Or choose a specific agency:"}
                     </p>
                     {/* Lista singole agenzie */}
                     {sellerSuggestions.map((s, i) => (
                       <button key={i} className={`w-full text-left px-5 py-3 flex items-center justify-between ${themeClasses.hoverBg} transition-colors`}
                         onClick={() => { setSellerQuery(s.name); setShowSellerSuggestions(false); handleSellerSearch(s.name); }}>
                         <span className="font-medium text-sm">{s.name}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${themeClasses.textSubtle} ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>{s.count.toLocaleString('it-IT')} annunci</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${themeClasses.textSubtle} ${isDark ? 'bg-slate-700' : 'bg-slate-100'}`}>{s.count.toLocaleString('it-IT')} {lang === 'it' ? 'annunci' : 'listings'}</span>
                       </button>
                     ))}
                   </div>
@@ -530,12 +530,12 @@ function App() {
             <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-6 md:p-8 rounded-3xl shadow-lg`}>
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div className="flex-1 min-w-0">
-                  <p className={`${themeClasses.textSubtle} text-xs font-bold uppercase tracking-widest mb-1`}>🏢 Profilo Agenzia</p>
+                  <p className={`${themeClasses.textSubtle} text-xs font-bold uppercase tracking-widest mb-1`}>🏢 {lang === 'it' ? 'Profilo Agenzia' : 'Agency Profile'}</p>
                   <h2 className="text-2xl font-bold truncate">{sellerResult.seller}</h2>
                   {/* Varianti nome trovate nel DB */}
                   {sellerResult.matched_names?.length > 1 && (
                     <div className="mt-2">
-                      <p className={`text-xs ${themeClasses.textSubtle} mb-1`}>Varianti nome trovate nel database:</p>
+                      <p className={`text-xs ${themeClasses.textSubtle} mb-1`}>{lang === 'it' ? 'Varianti nome trovate nel database:' : 'Name variations found in the database:'}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {sellerResult.matched_names.map((n: string) => (
                           <span key={n} className={`text-xs px-2.5 py-1 rounded-full font-medium ${isDark ? 'bg-indigo-900/40 text-indigo-300 border border-indigo-700/50' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'}`}>{n}</span>
@@ -555,8 +555,8 @@ function App() {
                 {[
                   {label: lang==='it'?'Annunci totali':'Total listings', val: sellerResult.total_listings.toLocaleString('it-IT'), color:'text-blue-500'},
                   {label: lang==='it'?'Prezzo Medio':'Avg Price', val: formatPrice(sellerResult.avg_price), color:'text-emerald-500'},
-                  {label: 'Mediana', val: formatPrice(sellerResult.median_price), color:'text-purple-500'},
-                  {label: 'Range prezzi', val: `${formatPrice(sellerResult.min_price)} – ${formatPrice(sellerResult.max_price)}`, color:'text-amber-500'},
+                  {label: lang === 'it' ? 'Mediana' : 'Median', val: formatPrice(sellerResult.median_price), color:'text-purple-500'},
+                  {label: lang === 'it' ? 'Range prezzi' : 'Price range', val: `${formatPrice(sellerResult.min_price)} – ${formatPrice(sellerResult.max_price)}`, color:'text-amber-500'},
                 ].map((m, i) => (
                   <div key={i} className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 rounded-2xl`}>
                     <p className={`text-xs font-bold uppercase tracking-widest ${themeClasses.textSubtle} mb-1`}>{m.label}</p>
@@ -584,9 +584,9 @@ function App() {
                             <div className="flex items-center gap-2">
                               <span className={`w-2.5 h-2.5 rounded-full`} style={{ backgroundColor: getSourceColor(s.name) }} />
                               <span className={`text-sm font-semibold ${sellerListingsSourceFilter === s.name ? 'text-blue-500' : ''}`}>{s.name}</span>
-                              {sellerListingsSourceFilter === s.name && <span className="text-xs text-blue-500 font-bold">(filtro attivo)</span>}
+                              {sellerListingsSourceFilter === s.name && <span className="text-xs text-blue-500 font-bold">({lang === 'it' ? 'filtro attivo' : 'active filter'})</span>}
                             </div>
-                            <span className={`text-sm font-bold ${themeClasses.textSubtle}`}>{s.count.toLocaleString('it-IT')} annunci</span>
+                            <span className={`text-sm font-bold ${themeClasses.textSubtle}`}>{s.count.toLocaleString('it-IT')} {lang === 'it' ? 'annunci' : 'listings'}</span>
                           </div>
                           <div className={`h-2 rounded-full ${isDark ? 'bg-slate-700' : 'bg-slate-100'} overflow-hidden`}>
                             <div className="h-full rounded-full transition-all duration-500 group-hover:opacity-80"
@@ -621,9 +621,9 @@ function App() {
               <div className={`px-6 py-4 border-b ${themeClasses.cardBorder} flex flex-wrap items-center justify-between gap-3 bg-black/5`}>
                 <div>
                   <h3 className="font-semibold text-sm">
-                    {sellerListings ? `${sellerListings.total.toLocaleString('it-IT')} annunci totali${sellerListingsSourceFilter ? ` · ${sellerListingsSourceFilter}` : ''}` : 'Tutti gli annunci'}
+                    {sellerListings ? `${sellerListings.total.toLocaleString('it-IT')} ${lang === 'it' ? 'annunci totali' : 'total listings'}${sellerListingsSourceFilter ? ` · ${sellerListingsSourceFilter}` : ''}` : lang === 'it' ? 'Tutti gli annunci' : 'All listings'}
                   </h3>
-                  {sellerListings && <p className={`text-xs ${themeClasses.textSubtle}`}>Pagina {sellerListings.page} di {sellerListings.total_pages}</p>}
+                  {sellerListings && <p className={`text-xs ${themeClasses.textSubtle}`}>{lang === 'it' ? 'Pagina' : 'Page'} {sellerListings.page} {lang === 'it' ? 'di' : 'of'} {sellerListings.total_pages}</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {sellerListingsSourceFilter && (
@@ -636,10 +636,10 @@ function App() {
                     setSellerListingsSort(e.target.value);
                     loadSellerListings(sellerResult.seller, 1, e.target.value, sellerListingsSourceFilter);
                   }} className={`text-xs ${themeClasses.inputSelect} border rounded-lg px-2 py-1.5 focus:outline-none`}>
-                    <option value="year_desc">Anno ↓</option>
-                    <option value="year_asc">Anno ↑</option>
-                    <option value="price_desc">Prezzo ↓</option>
-                    <option value="price_asc">Prezzo ↑</option>
+                    <option value="year_desc">{lang === 'it' ? 'Anno ↓' : 'Year ↓'}</option>
+                    <option value="year_asc">{lang === 'it' ? 'Anno ↑' : 'Year ↑'}</option>
+                    <option value="price_desc">{lang === 'it' ? 'Prezzo ↓' : 'Price ↓'}</option>
+                    <option value="price_asc">{lang === 'it' ? 'Prezzo ↑' : 'Price ↑'}</option>
                   </select>
                 </div>
               </div>
@@ -685,7 +685,7 @@ function App() {
                   ))}
                 </div>
               ) : (
-                <div className={`text-center py-12 ${themeClasses.textSubtle}`}>Nessun annuncio trovato</div>
+                <div className={`text-center py-12 ${themeClasses.textSubtle}`}>{lang === 'it' ? 'Nessun annuncio trovato' : 'No listings found'}</div>
               )}
 
               {/* Paginazione */}
@@ -693,7 +693,7 @@ function App() {
                 <div className={`px-6 py-4 border-t ${themeClasses.cardBorder} flex items-center justify-center gap-2 flex-wrap`}>
                   <button disabled={sellerListings.page <= 1} onClick={() => loadSellerListings(sellerResult.seller, sellerListings.page - 1, sellerListingsSort, sellerListingsSourceFilter)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${sellerListings.page <= 1 ? 'opacity-30 cursor-not-allowed' : `${themeClasses.cardBg} border ${themeClasses.cardBorder} hover:border-blue-500`}`}>
-                    ← Prec
+                    {lang === 'it' ? '← Prec' : '← Prev'}
                   </button>
                   {Array.from({ length: Math.min(sellerListings.total_pages, 7) }, (_, i) => {
                     const p = sellerListings.total_pages <= 7 ? i + 1 :
@@ -709,7 +709,7 @@ function App() {
                   })}
                   <button disabled={sellerListings.page >= sellerListings.total_pages} onClick={() => loadSellerListings(sellerResult.seller, sellerListings.page + 1, sellerListingsSort, sellerListingsSourceFilter)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${sellerListings.page >= sellerListings.total_pages ? 'opacity-30 cursor-not-allowed' : `${themeClasses.cardBg} border ${themeClasses.cardBorder} hover:border-blue-500`}`}>
-                    Succ →
+                    {lang === 'it' ? 'Succ →' : 'Next →'}
                   </button>
                 </div>
               )}
@@ -719,18 +719,18 @@ function App() {
 
         {/* ===== SEARCH BAR (only for model tab) ===== */}
         {activeTab === 'model' && (
-        <div className={`no-print transition-all duration-700 z-40 flex flex-col items-center w-full ${result ? 'max-w-6xl' : 'max-w-3xl'} ${isSticky && result ? 'fixed top-0 left-0 right-0 !max-w-none px-4 sm:px-6 lg:px-8 py-3 bg-slate-900/95 backdrop-blur-2xl border-b border-slate-700/50 shadow-2xl' : 'relative'}`}>
+        <div className={`no-print transition-all duration-700 z-40 flex flex-col items-center w-full ${result ? 'max-w-6xl' : 'max-w-3xl'} ${isSticky && result ? 'fixed top-0 left-0 right-0 !max-w-none px-3 sm:px-6 lg:px-8 py-2 sm:py-3 bg-slate-900/95 backdrop-blur-2xl border-b border-slate-700/50 shadow-2xl' : 'relative'}`}>
            <div className={`w-full ${isSticky && result ? 'max-w-6xl mx-auto' : ''}`}>
-             <form onSubmit={(e) => handleEvaluate(e)} className="relative flex flex-col md:flex-row items-center w-full gap-3">
+             <form onSubmit={(e) => handleEvaluate(e)} className="relative flex flex-col w-full gap-2 sm:gap-3">
                 <div className="relative w-full" ref={searchContainerRef}>
-                  <div className={`relative shadow-lg rounded-2xl md:rounded-full ${themeClasses.inputBg} border ${themeClasses.inputBorder} z-20`}>
-                  <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                    <Search className={`w-6 h-6 transition-colors duration-300 ${searchQuery ? 'text-blue-500' : themeClasses.textSubtle}`} />
+                  <div className={`relative shadow-lg rounded-2xl ${themeClasses.inputBg} border ${themeClasses.inputBorder} z-20`}>
+                  <div className="absolute inset-y-0 left-0 pl-4 sm:pl-6 flex items-center pointer-events-none">
+                    <Search className={`w-5 h-5 sm:w-6 sm:h-6 transition-colors duration-300 ${searchQuery ? 'text-blue-500' : themeClasses.textSubtle}`} />
                   </div>
                   <input 
                     type="text"
-                    placeholder="Es: Axopar 37, Beneteau Oceanis 41..."
-                    className={`w-full bg-transparent ${themeClasses.textMain} placeholder-${isDark ? 'slate-400' : 'slate-500'} rounded-2xl md:rounded-full py-4 pl-14 pr-4 md:pr-48 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
+                    placeholder={lang === 'it' ? "Es: Axopar 37, Beneteau Oceanis 41..." : "E.g.: Axopar 37, Beneteau Oceanis 41..."}
+                    className={`w-full bg-transparent ${themeClasses.textMain} rounded-2xl py-3.5 sm:py-4 pl-11 sm:pl-14 pr-4 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all`}
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -749,30 +749,31 @@ function App() {
                       <div 
                         key={idx} 
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className={`px-6 py-3 cursor-pointer flex items-center ${themeClasses.hoverBg} transition-colors`}
+                        className={`px-4 sm:px-6 py-3 cursor-pointer flex items-center ${themeClasses.hoverBg} transition-colors`}
                       >
-                        <Search className={`w-4 h-4 mr-3 ${themeClasses.textSubtle}`} />
-                        <span className="font-medium">{suggestion}</span>
+                        <Search className={`w-4 h-4 mr-3 shrink-0 ${themeClasses.textSubtle}`} />
+                        <span className="font-medium text-sm sm:text-base truncate">{suggestion}</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
               
-              <div className="md:absolute md:inset-y-1.5 md:right-2 flex space-x-2 w-full md:w-auto z-20">
+              {/* Anno + Valuta — affiancati su mobile */}
+              <div className="flex gap-2 w-full">
                 <input 
                   type="number"
-                  placeholder="Anno (Opz.)"
-                  className={`w-1/3 md:w-28 ${themeClasses.inputBg} border ${themeClasses.inputBorder} ${themeClasses.textMain} rounded-xl md:rounded-full px-3 py-3 md:py-2.5 text-center focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all`}
+                  placeholder={lang === 'it' ? "Anno (Opz.)" : "Year (Opt.)"}
+                  className={`w-28 shrink-0 ${themeClasses.inputBg} border ${themeClasses.inputBorder} ${themeClasses.textMain} rounded-xl px-3 py-3 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all`}
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
                 />
                 <button 
                   type="submit"
                   disabled={loading || !searchQuery}
-                  className="w-2/3 md:w-auto bg-blue-600 hover:bg-blue-500 text-white rounded-xl md:rounded-full px-6 py-3 md:py-2.5 font-bold shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center min-w-[110px]"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-6 py-3 font-bold shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {loading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Valuta'}
+                  {loading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : <><Search className="w-4 h-4" /> {lang === 'it' ? 'Valuta' : 'Evaluate'}</>}
                 </button>
               </div>
            </form>
@@ -837,7 +838,7 @@ function App() {
              <>
                <div className="mt-8 flex flex-wrap justify-center gap-3 animate-[fadeInUp_0.8s_ease-out]">
                  <button onClick={() => handleEvaluate(undefined, "Axopar 37")} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
-                   <Zap className="w-4 h-4 mr-1.5 text-yellow-500" /> Analizza Axopar 37
+                   <Zap className="w-4 h-4 mr-1.5 text-yellow-500" /> {lang === 'it' ? 'Analizza' : 'Analyze'} Axopar 37
                  </button>
                  <button onClick={() => handleEvaluate(undefined, "Beneteau Oceanis 41")} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
                    <Zap className="w-4 h-4 mr-1.5 text-blue-400" /> Beneteau Oceanis 41
@@ -850,7 +851,7 @@ function App() {
                {/* Portals & Scrolling Carousel */}
                <div className="mt-16 w-full max-w-5xl mx-auto animate-[fadeInUp_1s_ease-out]">
                  <p className={`text-center text-xs md:text-sm uppercase tracking-widest font-semibold mb-6 ${themeClasses.textSubtle}`}>
-                   Dati in tempo reale aggregati da
+                   {lang === 'it' ? 'Dati in tempo reale aggregati da' : 'Real-time data aggregated from'}
                  </p>
                  <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 mb-10 opacity-70 hover:opacity-100 transition-opacity duration-500">
                    <span className="text-xl md:text-2xl font-black text-slate-400 tracking-tight">Boat24</span>
@@ -902,33 +903,37 @@ function App() {
           <div id="report-container" ref={reportRef} className="no-print w-full max-w-6xl mt-8 space-y-6 animate-[fadeInUp_0.5s_ease-out] relative">
             
               {/* Box Intestazione & Market Share */}
-            <div className={`grid grid-cols-1 md:grid-cols-3 gap-6`}>
-              <div className={`md:col-span-2 flex flex-col justify-center ${themeClasses.cardBg} backdrop-blur-xl border ${themeClasses.cardBorder} p-6 md:p-8 rounded-3xl shadow-lg relative overflow-hidden`}>
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-4">
-                    {result.comparables?.[0]?.image_url && (
-                      <div className="relative group shrink-0">
-                        <img 
-                          src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(result.comparables[0].image_url)}`} 
-                          crossOrigin="anonymous"
-                          alt="boat preview" 
-                          className="w-16 h-16 md:w-24 md:h-24 object-cover rounded-2xl shadow-md border border-slate-500/20" 
-                        />
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6`}>
+              <div className={`md:col-span-2 flex flex-col justify-center ${themeClasses.cardBg} backdrop-blur-xl border ${themeClasses.cardBorder} p-4 sm:p-6 md:p-8 rounded-3xl shadow-lg relative overflow-hidden`}>
+                {/* Header: immagine + titolo + pdf button */}
+                <div className="flex flex-col gap-3 mb-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {result.comparables?.[0]?.image_url && (
+                        <div className="relative group shrink-0">
+                          <img 
+                            src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(result.comparables[0].image_url)}`} 
+                            crossOrigin="anonymous"
+                            alt="boat preview" 
+                            className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 object-cover rounded-2xl shadow-md border border-slate-500/20 shrink-0" 
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className={`${themeClasses.textSubtle} font-medium text-[10px] sm:text-xs mb-1 uppercase tracking-widest`}>{lang === 'it' ? 'Analisi di Mercato B2B' : 'B2B Market Analysis'}</p>
+                        <h2 className="text-xl sm:text-2xl md:text-4xl font-bold capitalize truncate">{result.query}</h2>
                       </div>
-                    )}
-                    <div>
-                      <p className={`${themeClasses.textSubtle} font-medium text-xs mb-1 uppercase tracking-widest`}>Analisi di Mercato B2B</p>
-                      <h2 className="text-3xl md:text-4xl font-bold capitalize">{result.query}</h2>
                     </div>
+                    <button 
+                      onClick={generatePDF}
+                      disabled={generatingPDF}
+                      className={`no-print shrink-0 flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                    >
+                      {generatingPDF ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current"></div> : <Download className="w-3.5 h-3.5" />}
+                      <span className="hidden sm:inline">{generatingPDF ? (lang === 'it' ? 'Generando...' : 'Generating...') : (lang === 'it' ? 'Esporta PDF Report' : 'Export PDF Report')}</span>
+                      <span className="sm:hidden">PDF</span>
+                    </button>
                   </div>
-                  <button 
-                    onClick={generatePDF}
-                    disabled={generatingPDF}
-                    className={`flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm no-print ${isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                  >
-                    {generatingPDF ? <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-2"></div> : <Download className="w-3.5 h-3.5 mr-2" />}
-                    {generatingPDF ? (lang === 'it' ? 'Generando...' : 'Generating...') : (lang === 'it' ? 'Esporta PDF Report' : 'Export PDF Report')}
-                  </button>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2">
@@ -937,18 +942,18 @@ function App() {
                     <Anchor className="w-3 h-3 mr-1.5" /> {result.identified_builder}
                   </span>
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${liquidityColors[result.valuation.liquidity_color]}`}>
-                    <Droplets className="w-3 h-3 mr-1.5" /> Liquidità: {result.valuation.liquidity_status}
+                    <Droplets className="w-3 h-3 mr-1.5" /> {lang === 'it' ? 'Liquidità:' : 'Liquidity:'} {result.valuation.liquidity_status}
                   </span>
                   {result.valuation.sold_last_week !== undefined && (
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${isDark ? 'bg-indigo-900/40 text-indigo-400 border-indigo-500/20' : 'bg-indigo-50 text-indigo-700 border-indigo-100'}`}>
-                      <TrendingUp className="w-3 h-3 mr-1.5" /> Vendite/Rimosse 7gg: {result.valuation.sold_last_week}
+                      <TrendingUp className="w-3 h-3 mr-1.5" /> {lang === 'it' ? 'Vendite/Rimosse 7gg:' : 'Sold/Removed 7d:'} {result.valuation.sold_last_week}
                     </span>
                   )}
                 </div>
                   {/* Confidence Score Widget */}
                   <div className="mt-4 sm:mt-0 flex flex-col items-start sm:items-end">
                      <div className="flex items-center space-x-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-tighter ${themeClasses.textSubtle}`}>Affidabilità Dato:</span>
+                        <span className={`text-[10px] font-bold uppercase tracking-tighter ${themeClasses.textSubtle}`}>{lang === 'it' ? 'Affidabilità Dato:' : 'Data Reliability:'}</span>
                         <div className="flex space-x-0.5">
                            {[1, 2, 3].map((step) => (
                              <div key={step} className={`h-1.5 w-6 rounded-full ${
@@ -971,7 +976,7 @@ function App() {
                   <div className={`mt-6 p-4 rounded-2xl ${isDark ? 'bg-blue-500/5 border border-blue-500/10' : 'bg-blue-50 border border-blue-100'} flex items-start`}>
                     <ShieldCheck className="w-5 h-5 mr-3 text-blue-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold mb-1 text-blue-500">Arbitraggio (Market Insight):</p>
+                      <p className="text-sm font-semibold mb-1 text-blue-500">{lang === 'it' ? 'Arbitraggio (Market Insight)' : 'Arbitrage (Market Insight)'}:</p>
                       <p className={`text-xs leading-relaxed ${themeClasses.textMuted}`}>
                         {(() => {
                           const countries = result.valuation.market_share_countries;
@@ -1011,12 +1016,12 @@ function App() {
               {/* Box Nazioni con Mappa (Leaflet) */}
               <div className={`${themeClasses.cardBg} backdrop-blur-xl border ${themeClasses.cardBorder} p-6 rounded-3xl shadow-lg flex flex-col h-[380px] md:h-[420px] overflow-hidden`}>
                 <p className={`${themeClasses.textSubtle} font-medium text-xs mb-3 uppercase tracking-widest flex items-center shrink-0`}>
-                   <MapPin className="w-3.5 h-3.5 mr-1.5"/> Arbitraggio per Nazione
+                   <MapPin className="w-3.5 h-3.5 mr-1.5"/> {lang === 'it' ? 'Arbitraggio per Nazione' : 'Arbitrage by Country'}
                 </p>
                 {result.valuation.market_share_countries?.length > 0 ? (
                   <div className="flex-1 w-full relative flex flex-col min-h-0">
                     <div className="flex-1 w-full rounded-xl overflow-hidden mb-3 shadow-inner border border-slate-500/20 bg-slate-200 min-h-0">
-                       <EuropeMap countriesData={result.valuation.market_share_countries} isDark={isDark} />
+                       <EuropeMap countriesData={result.valuation.market_share_countries} isDark={isDark} lang={lang} />
                     </div>
                     
                     {/* Legenda con Prezzi Medi per Nazione */}
@@ -1048,85 +1053,85 @@ function App() {
                   </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
-                    <span className="text-sm text-slate-500">Dati geografici non disponibili</span>
+                    <span className="text-sm text-slate-500">{lang === 'it' ? 'Dati geografici non disponibili' : 'Geographical data not available'}</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Metriche Principali (Broker Dashboard) */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               
-              <div className={`md:col-span-2 bg-gradient-to-br ${themeClasses.gradientCard} border ${isDark ? 'border-blue-500/30' : 'border-blue-200'} p-8 rounded-3xl shadow-lg relative overflow-hidden group`}>
+              <div className={`sm:col-span-2 md:col-span-2 bg-gradient-to-br ${themeClasses.gradientCard} border ${isDark ? 'border-blue-500/30' : 'border-blue-200'} p-5 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden group`}>
                 <div className="absolute -top-4 -right-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
-                  <TrendingUp className="w-40 h-40 text-blue-500" />
+                  <TrendingUp className="w-32 h-32 sm:w-40 sm:h-40 text-blue-500" />
                 </div>
                 <p className={`${isDark ? 'text-blue-400' : 'text-blue-700'} font-bold text-xs flex items-center uppercase tracking-widest mb-2`}>
-                  <Euro className="w-4 h-4 mr-2"/> Valore di Mercato Medio
+                  <Euro className="w-4 h-4 mr-2"/> {lang === 'it' ? 'Valore di Mercato Medio' : 'Average Market Value'}
                 </p>
-                <div className="text-5xl md:text-6xl font-black mb-2 relative z-10 tracking-tight">
+                <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-2 relative z-10 tracking-tight">
                   {formatPrice(result.valuation.average_price_eur)}
                 </div>
                 {result.valuation.median_price_eur && (
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className={`text-xs ${themeClasses.textMuted} flex items-center gap-1`}>
-                      <SlidersHorizontal className="w-3 h-3" /> Mediana:
+                      <SlidersHorizontal className="w-3 h-3" /> {lang === 'it' ? 'Mediana:' : 'Median:'}
                     </span>
                     <span className="text-sm font-bold">{formatPrice(result.valuation.median_price_eur)}</span>
                     {Math.abs(result.valuation.average_price_eur - result.valuation.median_price_eur) / result.valuation.average_price_eur > 0.1 && (
-                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">Mercato asimmetrico</span>
+                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">{lang === 'it' ? 'Mercato asimmetrico' : 'Asymmetric market'}</span>
                     )}
                   </div>
                 )}
-                <div className={`inline-flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg ${isDark ? 'bg-slate-900/50 text-slate-300' : 'bg-white/80 text-slate-600'}`}>
-                   <span>Su <strong className={isDark ? 'text-white' : 'text-slate-900'}>{result.total_results_found}</strong> annunci totali</span>
-                   <span className="text-slate-500">|</span>
+                <div className={`flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium px-3 py-1.5 rounded-lg w-fit ${isDark ? 'bg-slate-900/50 text-slate-300' : 'bg-white/80 text-slate-600'}`}>
+                   <span>{lang === 'it' ? 'Su' : 'On'} <strong className={isDark ? 'text-white' : 'text-slate-900'}>{result.total_results_found}</strong> {lang === 'it' ? 'annunci' : 'listings'}</span>
+                   <span className="hidden sm:inline text-slate-500">|</span>
                    <span>Min: <strong>{formatPrice(result.valuation.min_price_eur)}</strong></span>
-                   <span className="text-slate-500">|</span>
+                   <span className="hidden sm:inline text-slate-500">|</span>
                    <span>Max: <strong>{formatPrice(result.valuation.max_price_eur)}</strong></span>
                 </div>
               </div>
 
-              <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-6 rounded-3xl shadow-lg flex flex-col justify-center`}>
+              <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 sm:p-6 rounded-3xl shadow-lg flex flex-col justify-center`}>
                 <p className={`${themeClasses.textSubtle} font-bold text-xs uppercase tracking-widest mb-2 flex items-center`}>
-                  <TrendingDown className="w-4 h-4 mr-2 text-red-500"/> Perdita Valore Annua
+                  <TrendingDown className="w-4 h-4 mr-2 text-red-500"/> {lang === 'it' ? 'Perdita Valore Annua' : 'Annual Value Loss'}
                 </p>
                 {result.valuation.has_depreciation ? (
                   <>
-                    <div className="text-4xl md:text-5xl font-black text-red-500 mb-1 tracking-tighter">
+                    <div className="text-3xl sm:text-4xl font-black text-red-500 mb-1 tracking-tighter">
                       -{result.valuation.depreciation_percent}%
                     </div>
                     <div className={`text-sm font-medium ${themeClasses.textMuted}`}>
-                      circa {formatPrice(result.valuation.depreciation_value_eur)} / anno
+                      {lang === 'it' ? 'circa' : 'approx'} {formatPrice(result.valuation.depreciation_value_eur)} / {lang === 'it' ? 'anno' : 'year'}
                     </div>
                   </>
                 ) : (
-                  <div className={`text-sm ${themeClasses.textSubtle}`}>Dati storici insufficienti</div>
+                  <div className={`text-sm ${themeClasses.textSubtle}`}>{lang === 'it' ? 'Dati storici insufficienti' : 'Insufficient historical data'}</div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-5 rounded-3xl shadow-sm flex flex-col justify-center`}>
-                  <p className={`${themeClasses.textSubtle} font-medium text-xs uppercase tracking-widest mb-1 flex items-center`}><Calendar className="w-3.5 h-3.5 mr-1.5"/> Età Media Modello</p>
-                  <div className="text-3xl font-bold">{result.valuation.median_age_years} <span className="text-sm text-slate-500 font-normal">anni</span></div>
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-3 sm:gap-4">
+                <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 sm:p-5 rounded-3xl shadow-sm flex flex-col justify-center`}>
+                  <p className={`${themeClasses.textSubtle} font-medium text-xs uppercase tracking-widest mb-1 flex items-center`}><Calendar className="w-3.5 h-3.5 mr-1.5"/> {lang === 'it' ? 'Età Media' : 'Average Age'}</p>
+                  <div className="text-2xl sm:text-3xl font-bold">{result.valuation.median_age_years} <span className="text-sm text-slate-500 font-normal">{lang === 'it' ? 'anni' : 'years'}</span></div>
                 </div>
-                <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-5 rounded-3xl shadow-sm flex flex-col justify-center`}>
-                  <p className={`${themeClasses.textSubtle} font-medium text-xs uppercase tracking-widest mb-1 flex items-center`}><Ruler className="w-3.5 h-3.5 mr-1.5"/> Prezzo al Metro</p>
-                  <div className="text-2xl font-bold">{result.valuation.average_price_per_meter > 0 ? formatPrice(result.valuation.average_price_per_meter) : 'N/D'}</div>
+                <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 sm:p-5 rounded-3xl shadow-sm flex flex-col justify-center`}>
+                  <p className={`${themeClasses.textSubtle} font-medium text-xs uppercase tracking-widest mb-1 flex items-center`}><Ruler className="w-3.5 h-3.5 mr-1.5"/> {lang === 'it' ? 'Prezzo/Metro' : 'Price/Meter'}</p>
+                  <div className="text-xl sm:text-2xl font-bold">{result.valuation.average_price_per_meter > 0 ? formatPrice(result.valuation.average_price_per_meter) : 'N/D'}</div>
                 </div>
               </div>
 
             </div>
 
             {/* Grafico Trend e Lista Ottimizzata */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               
-              <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-6 md:p-8 rounded-3xl shadow-lg`}>
-                <h3 className="text-base font-semibold mb-1 flex items-center tracking-wide">
-                  <Activity className="w-5 h-5 mr-3 text-blue-500" /> Andamento Storico Prezzi + IQR
+              <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 sm:p-6 md:p-8 rounded-3xl shadow-lg`}>
+                <h3 className="text-sm sm:text-base font-semibold mb-1 flex items-center tracking-wide">
+                  <Activity className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-blue-500" /> {lang === 'it' ? 'Andamento Storico Prezzi + IQR' : 'Historical Price Trend + IQR'}
                 </h3>
-                <p className={`text-xs ${themeClasses.textSubtle} mb-5`}>Banda grigia = range interquartile (Q25–Q75)</p>
-                <div className="h-[330px] w-full">
+                <p className={`text-xs ${themeClasses.textSubtle} mb-4 sm:mb-5`}>{lang === 'it' ? 'Banda grigia = range interquartile (Q25–Q75)' : 'Gray band = interquartile range (Q25–Q75)'}</p>
+                <div className="h-[260px] sm:h-[330px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={result.valuation.price_trend?.length > 0 ? result.valuation.price_trend : []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"} vertical={false} />
@@ -1135,9 +1140,9 @@ function App() {
                       <Tooltip
                         formatter={(value: any, name: string | undefined) => [
                           formatPrice(Number(value)),
-                          name === 'avg_price' ? 'Mediana' : name === 'q75' ? 'Q75 (75°)' : name === 'q25' ? 'Q25 (25°)' : (name ?? '')
+                          name === 'avg_price' ? (lang === 'it' ? 'Mediana' : 'Median') : name === 'q75' ? 'Q75 (75°)' : name === 'q25' ? 'Q25 (25°)' : (name ?? '')
                         ]}
-                        labelFormatter={(label) => `Anno costruzione: ${label}`}
+                        labelFormatter={(label) => `${lang === 'it' ? 'Anno costruzione:' : 'Build year:'} ${label}`}
                         contentStyle={{ backgroundColor: themeClasses.tooltipBg, border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '12px', color: themeClasses.tooltipText, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
                       />
                       {/* IQR band */}
@@ -1286,10 +1291,10 @@ function App() {
             <div className="flex justify-between items-center mb-6 border-b-2 border-slate-200 pb-4">
               <div className="flex items-center">
                 <img src="https://batoo.it/icons/batoo-logo-dark.svg?dpl=dpl_9aCViBvDC47Q54fZ2iSr4nXE9S5q" alt="Batoo Logo" className="h-6 opacity-30 invert" />
-                <h1 className="text-2xl font-black text-slate-800 ml-3">Report di Mercato: {result.query.toUpperCase()}</h1>
+                <h1 className="text-2xl font-black text-slate-800 ml-3">{lang === 'it' ? 'Report di Mercato:' : 'Market Report:'} {result.query.toUpperCase()}</h1>
               </div>
               <div className="text-right text-xs text-slate-500 font-medium">
-                Data Elaborazione: {new Date().toLocaleDateString('it-IT')}
+                {lang === 'it' ? 'Data Elaborazione:' : 'Processing Date:'} {new Date().toLocaleDateString('it-IT')}
               </div>
             </div>
 
@@ -1314,7 +1319,7 @@ function App() {
               {/* Box Numerici */}
               <div className="flex-1 flex flex-col justify-center space-y-4">
                 <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-100">
-                  <p className="text-[10px] text-blue-600 uppercase font-bold tracking-widest mb-1">Prezzo Medio Stimato</p>
+                  <p className="text-[10px] text-blue-600 uppercase font-bold tracking-widest mb-1">{lang === 'it' ? 'Prezzo Medio Stimato' : 'Estimated Average Price'}</p>
                   <div className="text-4xl font-black text-slate-800 tracking-tight">{formatPrice(result.valuation.average_price_eur)}</div>
                   <p className="text-xs text-slate-500 mt-1 font-medium bg-white px-2 py-1 inline-block rounded border border-slate-100">
                     Min: {formatPrice(result.valuation.min_price_eur)} - Max: {formatPrice(result.valuation.max_price_eur)}
@@ -1322,8 +1327,8 @@ function App() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-0.5">Età Media</p>
-                    <div className="text-xl font-bold text-slate-700">{result.valuation.median_age_years} <span className="text-sm font-medium">anni</span></div>
+                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-0.5">{lang === "it" ? "Età Media" : "Average Age"}</p>
+                    <div className="text-xl font-bold text-slate-700">{result.valuation.median_age_years} <span className="text-sm font-medium">{lang === "it" ? "anni" : "years"}</span></div>
                   </div>
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-0.5">{lang === "it" ? "Prezzo al Metro" : "Price per Meter"}</p>
@@ -1456,9 +1461,9 @@ function App() {
       </main>
 
       {/* Footer Istituzionale */}
-      <footer className={`no-print relative z-10 w-full py-6 mt-auto border-t ${isDark ? 'border-white/10 bg-slate-950/80 text-slate-400' : 'border-slate-200 bg-slate-100/80 text-slate-500'} backdrop-blur-md`}>
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between text-xs">
-          <div className="flex items-center mb-2 md:mb-0">
+      <footer className={`no-print relative z-10 w-full py-4 sm:py-6 mt-auto border-t ${isDark ? 'border-white/10 bg-slate-950/80 text-slate-400' : 'border-slate-200 bg-slate-100/80 text-slate-500'} backdrop-blur-md`}>
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+          <div className="flex items-center">
             <img 
               src="https://batoo.it/icons/batoo-logo-dark.svg?dpl=dpl_9aCViBvDC47Q54fZ2iSr4nXE9S5q" 
               alt="Batoo Logo" 
@@ -1466,9 +1471,9 @@ function App() {
             />
             <span>Price Engine B2B</span>
           </div>
-          <div className="text-center md:text-right">
-            <p>Algoritmo proprietario alimentato da oltre <strong className={isDark ? 'text-white' : 'text-slate-700'}>{totalBoatsDB > 0 ? (Math.floor(totalBoatsDB/100)*100).toLocaleString('it-IT') + '+' : '...'}</strong> annunci reali in Europa.</p>
-            <p className="mt-1 opacity-75">I dati forniti sono stime statistiche basate sull'analisi predittiva del mercato nautico.</p>
+          <div className="text-center sm:text-right">
+            <p>{lang === 'it' ? 'Algoritmo proprietario' : 'Proprietary algorithm'} · <strong className={isDark ? 'text-white' : 'text-slate-700'}>{totalBoatsDB > 0 ? (Math.floor(totalBoatsDB/100)*100).toLocaleString('it-IT') + '+' : '...'}</strong> {lang === 'it' ? 'annunci in Europa' : 'listings in Europe'}.</p>
+            <p className="mt-0.5 opacity-75 hidden sm:block">{lang === 'it' ? "I dati forniti sono stime statistiche basate sull'analisi predittiva del mercato nautico." : "The provided data are statistical estimates based on predictive analysis of the nautical market."}</p>
           </div>
         </div>
       </footer>

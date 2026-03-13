@@ -83,9 +83,10 @@ const COUNTRY_COORDS: Record<string, [number, number]> = {
 interface EuropeMapProps {
   countriesData: { name: string; count: number; percentage: number }[];
   isDark: boolean;
+  lang: 'it' | 'en';
 }
 
-export default function EuropeMap({ countriesData, isDark }: EuropeMapProps) {
+export default function EuropeMap({ countriesData, isDark, lang }: EuropeMapProps) {
   // Fix per un warning noto di React StrictMode con Leaflet che non re-renderizza bene la mappa se cambiano le dimensioni
   const [mapRendered, setMapRendered] = useState(false);
 
@@ -165,7 +166,7 @@ export default function EuropeMap({ countriesData, isDark }: EuropeMapProps) {
                 <div className="text-center font-sans">
                   <strong className="block text-sm">{marker.name}</strong>
                   <span className="text-blue-600 font-bold">{marker.percentage}%</span> 
-                  <span className="text-slate-500 text-xs ml-1">({marker.count} barche)</span>
+                  <span className="text-slate-500 text-xs ml-1">({marker.count} {lang === 'it' ? 'barche' : 'boats'})</span>
                 </div>
               </Tooltip>
             </CircleMarker>
