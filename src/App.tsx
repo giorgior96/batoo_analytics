@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import axios from 'axios';
 import { Search, Anchor, Euro, Calendar, TrendingUp, TrendingDown, ChevronRight, Sun, Moon, AlertTriangle, MapPin, Ruler, Activity, Droplets, Zap, Download, ShieldCheck, FileText, Filter, Clock, X, Check, BarChart2, SlidersHorizontal, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ComposedChart, Area, BarChart, Bar, Cell } from 'recharts';
+import { mp } from './analytics';
 
 const AnimatedCounter = ({ end, duration = 2000 }: { end: number, duration?: number }) => {
   const [count, setCount] = useState(0);
@@ -187,8 +188,15 @@ function App() {
   // Tema Chiaro/Scuro
   const [isDark, setIsDark] = useState(false);
   const [lang, setLang] = useState<"it" | "en">("it");
-  const toggleLang = () => setLang(l => l === "it" ? "en" : "it");
-  const toggleTheme = () => setIsDark(!isDark);
+  const toggleLang = () => {
+    const next = lang === 'it' ? 'en' : 'it';
+    mp.trackLangSwitch(next);
+    setLang(next);
+  };
+  const toggleTheme = () => {
+    mp.trackThemeSwitch(!isDark ? 'dark' : 'light');
+    setIsDark(!isDark);
+  };
 
   // Chiude i suggerimenti se si clicca fuori
   useEffect(() => {
@@ -233,6 +241,7 @@ function App() {
     setBrokerResult(null);
     setLoading(true);
     setError('');
+    mp.trackSearch(queryToUse, year, lang);
     try {
       let url = `${API_BASE_URL}/evaluate?q=${encodeURIComponent(queryToUse)}&lang=${lang}`;
       if (year && !directQuery) url += `&year=${year}`;
@@ -241,6 +250,7 @@ function App() {
       const res = await axios.get(url);
       setResult(res.data);
       addRecentSearch(queryToUse);
+      mp.trackSearchResult(queryToUse, res.data.total_results_found, res.data.valuation?.average_price_eur, lang);
       addToast(`${res.data.total_results_found} annunci trovati`, 'success');
     } catch (err: any) {
       setResult(null);
@@ -278,6 +288,7 @@ function App() {
     setResult(null);
     setBrokerResult(null);
     setError('');
+    mp.trackSellerSearch(name, lang);
     try {
       const res = await axios.get(`${API_BASE_URL}/seller-stats?seller=${encodeURIComponent(name)}&lang=${lang}`);
       setSellerResult(res.data);
@@ -328,6 +339,7 @@ function App() {
   const generatePDF = () => {
     const printConfig = document.title;
     document.title = `Batoo-Report-${result.query.replace(/\s+/g, '-')}`;
+    mp.trackPDFExport(result.query);
     window.print();
     document.title = printConfig;
     addToast(lang === 'it' ? 'Report PDF in elaborazione...' : 'Processing PDF report...', 'info');
@@ -780,7 +792,7 @@ function App() {
 
            {/* Advanced Filters Toggle */}
            <div className="mt-3 flex justify-center">
-             <button onClick={() => setShowFilters(!showFilters)}
+             <button onClick={() => { if (!showFilters) mp.trackFiltersOpen(); setShowFilters(!showFilters); }}
                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold border transition-all ${showFilters ? 'bg-blue-600 text-white border-blue-600' : `${themeClasses.cardBg} ${themeClasses.cardBorder} ${themeClasses.textMuted} hover:border-blue-500`}`}>
                <Filter className="w-3 h-3" />
                {lang === 'it' ? 'Filtri Avanzati' : 'Advanced Filters'}
@@ -837,13 +849,13 @@ function App() {
            {!result && !loading && (
              <>
                <div className="mt-8 flex flex-wrap justify-center gap-3 animate-[fadeInUp_0.8s_ease-out]">
-                 <button onClick={() => handleEvaluate(undefined, "Axopar 37")} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
+                 <button onClick={() => { mp.trackQuickLink("Axopar 37"); handleEvaluate(undefined, "Axopar 37"); }} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
                    <Zap className="w-4 h-4 mr-1.5 text-yellow-500" /> {lang === 'it' ? 'Analizza' : 'Analyze'} Axopar 37
                  </button>
-                 <button onClick={() => handleEvaluate(undefined, "Beneteau Oceanis 41")} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
+                 <button onClick={() => { mp.trackQuickLink("Beneteau Oceanis 41"); handleEvaluate(undefined, "Beneteau Oceanis 41"); }} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
                    <Zap className="w-4 h-4 mr-1.5 text-blue-400" /> Beneteau Oceanis 41
                  </button>
-                 <button onClick={() => handleEvaluate(undefined, "Pershing 62")} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
+                 <button onClick={() => { mp.trackQuickLink("Pershing 62"); handleEvaluate(undefined, "Pershing 62"); }} className={`px-4 py-2 rounded-full text-sm font-medium border ${themeClasses.cardBorder} ${themeClasses.cardBg} hover:border-blue-500 hover:text-blue-500 transition-colors flex items-center shadow-sm`}>
                    <Zap className="w-4 h-4 mr-1.5 text-purple-500" /> Pershing 62
                  </button>
                </div>
