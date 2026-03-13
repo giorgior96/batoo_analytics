@@ -11,6 +11,14 @@ mixpanel.init(TOKEN, {
   api_host: 'https://api-eu.mixpanel.com',
 });
 
+// Profile anonymous visitors: identify with the auto-generated distinct_id
+// so Mixpanel creates a People profile for every visitor.
+const anonId = mixpanel.get_distinct_id();
+mixpanel.identify(anonId);
+mixpanel.people.set_once({
+  $first_seen: new Date().toISOString(),
+});
+
 export const mp = {
   /** Ricerca modello barca */
   trackSearch: (query: string, year: string, lang: string) => {
