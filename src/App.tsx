@@ -505,8 +505,8 @@ function App() {
               <h3 className="font-bold text-xl mb-2">🏢 {lang === 'it' ? 'Cerca per Agenzia / Broker' : 'Search by Agency / Broker'}</h3>
               <p className={`text-sm ${themeClasses.textMuted} mb-6`}>
                 {lang === 'it'
-                  ? 'Digita il nome di un\'agenzia nautica per vedere il suo inventario e le statistiche di mercato.'
-                  : 'Type an agency name to see their full inventory and market statistics.'}
+                  ? 'Digita il nome di un\'agenzia nautica per scoprirne l\'inventario e il posizionamento sul mercato.'
+                  : 'Type an agency name to discover their inventory and market positioning.'}
               </p>
               <div className="relative">
                 <div className={`flex items-center gap-3 ${themeClasses.inputBg} border ${themeClasses.inputBorder} rounded-2xl px-4 shadow`}>
@@ -608,7 +608,7 @@ function App() {
                 {[
                   {label: lang==='it'?'Annunci totali':'Total listings', val: sellerResult.total_listings.toLocaleString('it-IT'), color:'text-blue-500'},
                   {label: lang==='it'?'Prezzo Medio':'Avg Price', val: formatPrice(sellerResult.avg_price), color:'text-emerald-500'},
-                  {label: lang === 'it' ? 'Mediana' : 'Median', val: formatPrice(sellerResult.median_price), color:'text-purple-500'},
+                  {label: lang === 'it' ? 'Valore Centrale' : 'Central Val', val: formatPrice(sellerResult.median_price), color:'text-purple-500'},
                   {label: lang === 'it' ? 'Range prezzi' : 'Price range', val: `${formatPrice(sellerResult.min_price)} – ${formatPrice(sellerResult.max_price)}`, color:'text-amber-500'},
                 ].map((m, i) => (
                   <div key={i} className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 rounded-2xl`}>
@@ -726,6 +726,12 @@ function App() {
                                 {boat.source}
                               </span>
                             )}
+                            {boat.is_duplicate && (
+                              <span title={lang === 'it' ? 'Escluso dalle medie: stessa barca rilevata su altro portale/broker' : 'Excluded from averages: same boat detected on another portal/broker'}
+                                className={`px-1.5 py-0.5 rounded-md text-[9px] uppercase font-extrabold tracking-wider border border-dashed cursor-help ${isDark ? 'text-slate-500 border-slate-600 bg-slate-800/40' : 'text-slate-400 border-slate-300 bg-slate-50'}`}>
+                                ⊘ {lang === 'it' ? 'duplicato' : 'duplicate'}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="shrink-0 text-right flex flex-col items-end justify-center">
@@ -733,7 +739,7 @@ function App() {
                             {boat.price_eur ? formatPrice(boat.price_eur) : '—'}
                           </div>
                           {boat.market_alignment_percent !== null && boat.market_alignment_percent !== undefined && (
-                            <div className="mt-0.5" title={lang === 'it' ? `Mediana di mercato stimata: ${formatPrice(boat.market_median_price)}` : `Estimated market median: ${formatPrice(boat.market_median_price)}`}>
+                            <div className="mt-0.5" title={lang === 'it' ? `Valore di mercato stimato: ${formatPrice(boat.market_median_price)}` : `Estimated market value: ${formatPrice(boat.market_median_price)}`}>
                               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                                 boat.market_alignment_percent < -5 ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' :
                                 boat.market_alignment_percent > 5 ? 'bg-red-500/10 text-red-600 border border-red-500/20' :
@@ -1147,7 +1153,7 @@ function App() {
                 {result.valuation.median_price_eur && (
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className={`text-xs ${themeClasses.textMuted} flex items-center gap-1`}>
-                      <SlidersHorizontal className="w-3 h-3" /> {lang === 'it' ? 'Mediana:' : 'Median:'}
+                      <SlidersHorizontal className="w-3 h-3" /> {lang === 'it' ? 'Valore Centrale:' : 'Central Val:'}
                     </span>
                     <span className="text-sm font-bold">{formatPrice(result.valuation.median_price_eur)}</span>
                     {Math.abs(result.valuation.average_price_eur - result.valuation.median_price_eur) / result.valuation.average_price_eur > 0.1 && (
@@ -1156,12 +1162,25 @@ function App() {
                   </div>
                 )}
                 <div className={`flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium px-3 py-1.5 rounded-lg w-fit ${isDark ? 'bg-slate-900/50 text-slate-300' : 'bg-white/80 text-slate-600'}`}>
-                   <span>{lang === 'it' ? 'Su' : 'On'} <strong className={isDark ? 'text-white' : 'text-slate-900'}>{result.total_results_found}</strong> {lang === 'it' ? 'annunci' : 'listings'}</span>
+                   <span>{lang === 'it' ? 'Su' : 'On'} <strong className={isDark ? 'text-white' : 'text-slate-900'}>{result.total_results_found}</strong> {lang === 'it' ? 'annunci unici' : 'unique listings'}</span>
                    <span className="hidden sm:inline text-slate-500">|</span>
                    <span>Min: <strong>{formatPrice(result.valuation.min_price_eur)}</strong></span>
                    <span className="hidden sm:inline text-slate-500">|</span>
                    <span>Max: <strong>{formatPrice(result.valuation.max_price_eur)}</strong></span>
                 </div>
+                {result.duplicates_removed > 0 && (
+                  <div className={`flex items-center gap-1.5 text-[10px] font-semibold mt-1.5 px-2 py-1 rounded-lg w-fit ${
+                    isDark ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-amber-50 text-amber-600 border border-amber-200'
+                  }`}>
+                    <span>⚡</span>
+                    <span>
+                      {lang === 'it'
+                        ? `${result.duplicates_removed} duplicati cross-portale esclusi dalle medie`
+                        : `${result.duplicates_removed} cross-portal duplicates excluded from averages`
+                      }
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 sm:p-6 rounded-3xl shadow-lg flex flex-col justify-center`}>
@@ -1200,9 +1219,9 @@ function App() {
               
               <div className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} p-4 sm:p-6 md:p-8 rounded-3xl shadow-lg`}>
                 <h3 className="text-sm sm:text-base font-semibold mb-1 flex items-center tracking-wide">
-                  <Activity className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-blue-500" /> {lang === 'it' ? 'Andamento Storico Prezzi + IQR' : 'Historical Price Trend + IQR'}
+                  <Activity className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-blue-500" /> {lang === 'it' ? 'Andamento Storico Prezzi' : 'Historical Price Trend'}
                 </h3>
-                <p className={`text-xs ${themeClasses.textSubtle} mb-4 sm:mb-5`}>{lang === 'it' ? 'Banda grigia = range interquartile (Q25–Q75)' : 'Gray band = interquartile range (Q25–Q75)'}</p>
+                <p className={`text-xs ${themeClasses.textSubtle} mb-4 sm:mb-5`}>{lang === 'it' ? 'Banda grigia = fascia di mercato principale' : 'Gray band = main market range'}</p>
                 <div className="h-[260px] sm:h-[330px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={result.valuation.price_trend?.length > 0 ? result.valuation.price_trend : []} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -1212,7 +1231,7 @@ function App() {
                       <Tooltip
                         formatter={(value: any, name: string | undefined) => [
                           formatPrice(Number(value)),
-                          name === 'avg_price' ? (lang === 'it' ? 'Mediana' : 'Median') : name === 'q75' ? 'Q75 (75°)' : name === 'q25' ? 'Q25 (25°)' : (name ?? '')
+                          name === 'avg_price' ? (lang === 'it' ? 'Valore Centrale' : 'Central Val') : name === 'q75' ? (lang === 'it' ? 'Fascia Alta' : 'High Range') : name === 'q25' ? (lang === 'it' ? 'Fascia Bassa' : 'Low Range') : (name ?? '')
                         ]}
                         labelFormatter={(label) => `${lang === 'it' ? 'Anno costruzione:' : 'Build year:'} ${label}`}
                         contentStyle={{ backgroundColor: themeClasses.tooltipBg, border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '12px', color: themeClasses.tooltipText, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
@@ -1239,7 +1258,7 @@ function App() {
                 <div>
                   <h3 className="font-semibold text-sm">
                     {evaluateListings
-                      ? `${evaluateListings.total.toLocaleString('it-IT')} ${lang === 'it' ? 'annunci trovati' : 'listings found'}`
+                      ? `${evaluateListings.total.toLocaleString('it-IT')} ${lang === 'it' ? 'annunci trovati' : 'listings found'} (${lang === 'it' ? 'tutti i portali' : 'all portals'})`
                       : (lang === 'it' ? 'Caricamento annunci...' : 'Loading listings...')}
                   </h3>
                   {evaluateListings && (
@@ -1247,7 +1266,15 @@ function App() {
                       {lang === 'it' ? 'Pagina' : 'Page'} {evaluateListings.page} {lang === 'it' ? 'di' : 'of'} {evaluateListings.total_pages}
                       {evaluateListings.outlier_range && (
                         <span className="ml-2 text-amber-500">
-                          · range valido: {formatPrice(evaluateListings.outlier_range.p5)}–{formatPrice(evaluateListings.outlier_range.p95)}
+                          · {lang === 'it' ? 'range di mercato' : 'market range'}: {formatPrice(evaluateListings.outlier_range.p5)}–{formatPrice(evaluateListings.outlier_range.p95)}
+                        </span>
+                      )}
+                      {result?.duplicates_removed > 0 && (
+                        <span className={`ml-2 font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                          · {lang === 'it'
+                              ? `medie calcolate su ${result.deduped_sample_size} barche uniche`
+                              : `averages based on ${result.deduped_sample_size} unique boats`
+                            }
                         </span>
                       )}
                     </p>
@@ -1303,7 +1330,13 @@ function App() {
                             )}
                             {boat.is_outlier && (
                               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                                ⚠ outlier
+                                ⚠ {lang === 'it' ? 'fuori mercato' : 'out of market'}
+                              </span>
+                            )}
+                            {boat.is_duplicate && (
+                              <span title={lang === 'it' ? 'Escluso dalle medie: stessa barca rilevata su altro portale/broker' : 'Excluded from averages: same boat detected on another portal/broker'}
+                                className={`px-1.5 py-0.5 rounded-md text-[9px] uppercase font-extrabold tracking-wider border border-dashed cursor-help ${isDark ? 'text-slate-500 border-slate-600 bg-slate-800/40' : 'text-slate-400 border-slate-300 bg-slate-50'}`}>
+                                ⊘ {lang === 'it' ? 'duplicato' : 'duplicate'}
                               </span>
                             )}
                           </div>
@@ -1319,7 +1352,9 @@ function App() {
                             <span className={`text-[10px] font-bold ${
                               boat.price_percentile < 30 ? 'text-emerald-500' :
                               boat.price_percentile > 70 ? 'text-red-500' : 'text-amber-500'
-                            }`}>{boat.price_percentile}° perc.</span>
+                            }`}>{boat.price_percentile < 30 ? (lang === 'it' ? 'Prezzo Ottimo' : 'Great Price') :
+                                 boat.price_percentile > 70 ? (lang === 'it' ? 'Prezzo Alto' : 'High Price') :
+                                 (lang === 'it' ? 'In Linea' : 'In Line')}</span>
                           )}
                           {boat.status === false && <span className="block text-[10px] font-bold text-red-500">{lang === 'it' ? 'RIMOSSO' : 'REMOVED'}</span>}
                         </div>
@@ -1563,7 +1598,7 @@ function App() {
             </div>
             
             <div className="mt-6 text-center text-[9px] text-slate-400 uppercase font-bold tracking-widest pt-4 border-t border-slate-200">
-               {lang === "it" ? "Generato tramite Batoo Price Engine B2B. I dati riportati sono frutto di analisi statistica." : "Generated via Batoo Price Engine B2B. The data reported are the result of statistical analysis."}
+               {lang === "it" ? "Generato tramite Batoo Price Engine B2B. I dati riportati rappresentano stime correnti di mercato." : "Generated via Batoo Price Engine B2B. Data reported represent current market estimates."}
             </div>
 
             {/* SECONDA PAGINA: Lista Completa */}
@@ -1624,7 +1659,7 @@ function App() {
           </div>
           <div className="text-center sm:text-right">
             <p>{lang === 'it' ? 'Algoritmo proprietario' : 'Proprietary algorithm'} · <strong className={isDark ? 'text-white' : 'text-slate-700'}>{totalBoatsDB > 0 ? (Math.floor(totalBoatsDB/100)*100).toLocaleString('it-IT') + '+' : '...'}</strong> {lang === 'it' ? 'annunci in Europa' : 'listings in Europe'}.</p>
-            <p className="mt-0.5 opacity-75 hidden sm:block">{lang === 'it' ? "I dati forniti sono stime statistiche basate sull'analisi predittiva del mercato nautico." : "The provided data are statistical estimates based on predictive analysis of the nautical market."}</p>
+            <p className="mt-0.5 opacity-75 hidden sm:block">{lang === 'it' ? "I dati forniti sono valutazioni basate sull'andamento in tempo reale del mercato nautico." : "The provided data are valuations based on real-time nautical market trends."}</p>
           </div>
         </div>
       </footer>
