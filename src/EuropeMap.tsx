@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
-import { useEffect, useState, useMemo } from 'react';
+import { Fragment, useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -81,13 +81,28 @@ const COUNTRY_COORDS: Record<string, [number, number]> = {
 };
 
 interface EuropeMapProps {
-  countriesData: { name: string; count: number; percentage: number }[];
-  listings?: any[];
+  countriesData: { name: string; count: number; percentage: number; avg_price?: number }[];
   isDark: boolean;
   lang: 'it' | 'en';
 }
 
-export default function EuropeMap({ countriesData, listings, isDark, lang }: EuropeMapProps) {
+const getHeatColor = (intensity: number) => {
+  if (intensity >= 0.75) return '#ef4444';
+  if (intensity >= 0.5) return '#f97316';
+  if (intensity >= 0.25) return '#f59e0b';
+  return '#38bdf8';
+};
+
+const formatPrice = (value?: number) => {
+  if (!value) return null;
+  return new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
+export default function EuropeMap({ countriesData, isDark, lang }: EuropeMapProps) {
   // Fix per un warning noto di React StrictMode con Leaflet che non re-renderizza bene la mappa se cambiano le dimensioni
   const [mapRendered, setMapRendered] = useState(false);
 
@@ -97,45 +112,9 @@ export default function EuropeMap({ countriesData, listings, isDark, lang }: Eur
     return () => clearTimeout(timer);
   }, []);
 
-  // Prepariamo i marker per le singole barche (scattered)
-  const boatMarkers = useMemo(() => {
-    if (!listings || listings.length === 0) return [];
-    return listings.map((boat, i) => {
-      const nameLower = (boat.country || '').toLowerCase();
-      let coords = COUNTRY_COORDS[nameLower];
-      if (!coords) {
-        const foundKey = Object.keys(COUNTRY_COORDS).find(k => nameLower.includes(k) || k.includes(nameLower.replace('-', ' ')));
-        coords = foundKey ? COUNTRY_COORDS[foundKey] : null as any;
-      }
-      if (!coords) {
-         const noDash = nameLower.replace(/-/g, ' ');
-         if (COUNTRY_COORDS[noDash]) coords = COUNTRY_COORDS[noDash];
-      }
-      
-      // Fallback center se non trovato
-      if (!coords) coords = [46.0, 9.0];
-
-      // Jitter (sparpagliamento) per non sovrapporre le barche (circa +/- 2.5 gradi, dipende dalla nazione)
-      // Generiamo un seed pseudo-casuale basato sul nome/id per mantenerlo stabile al re-render
-      const seed = (boat.id ? boat.id.toString().charCodeAt(0) : i) + i;
-      const random = () => {
-         const x = Math.sin(seed * 9999) * 10000;
-         return x - Math.floor(x);
-      };
-      
-      const jLat = (Math.random() - 0.5) * 4.0;
-      const jLng = (Math.random() - 0.5) * 4.0;
-
-      return {
-        ...boat,
-        coords: [coords[0] + jLat, coords[1] + jLng]
-      };
-    });
-  }, [listings]);
-
   if (!mapRendered) return <div className="w-full h-[250px] animate-pulse bg-slate-200/20 rounded-xl" />;
 
-  // Prepariamo i marker aggregati (nazioni)
+  // Heat layer aggregato per nazione: niente coordinate inventate per singoli annunci.
   let maxCount = 0;
   const aggregateMarkers = countriesData.map(c => {
     if (c.count > maxCount) maxCount = c.count;
@@ -180,56 +159,60 @@ export default function EuropeMap({ countriesData, listings, isDark, lang }: Eur
           url={tileUrl}
         />
         
-        {/* Aggregated Markers (Big circles) - solo se non ci sono le singole barche o come sfondo */}
         {aggregateMarkers.map((marker, idx) => {
-          const radius = 8 + (17 * (marker.count / (maxCount || 1)));
+          const intensity = marker.count / (maxCount || 1);
+          const radius = 16 + (42 * Math.sqrt(intensity));
+          const color = getHeatColor(intensity);
+          const avgPrice = formatPrice(marker.avg_price);
+
           return (
-            <CircleMarker
-              key={`agg-${idx}`}
-              center={marker.coords}
-              radius={radius as any}
-              fillColor="#3b82f6" // Tailwind blue-500
-              fillOpacity={listings?.length ? 0.2 : 0.7} // Più trasparente se ci sono barche singole
-              color={isDark ? "#ffffff" : "#1e40af"}
-              weight={listings?.length ? 1 : 2}
-              interactive={!listings?.length} // Disabilita tooltip aggregato se ci sono i punti singoli
-            >
-              {!listings?.length && (
+            <Fragment key={`heat-${idx}`}>
+              <CircleMarker
+                center={marker.coords}
+                radius={radius as any}
+                fillColor={color}
+                fillOpacity={0.22 + (0.35 * intensity)}
+                color={color}
+                opacity={0.7}
+                weight={1.5}
+              >
                 <Tooltip direction="top" offset={[0, -10] as any} opacity={1} as any>
                   <div className="text-center font-sans">
                     <strong className="block text-sm">{marker.name}</strong>
                     <span className="text-blue-600 font-bold">{marker.percentage}%</span> 
                     <span className="text-slate-500 text-xs ml-1">({marker.count} {lang === 'it' ? 'barche' : 'boats'})</span>
+                    {avgPrice && (
+                      <span className="block text-xs mt-1 text-slate-500">
+                        {lang === 'it' ? 'Prezzo medio' : 'Avg price'}: <strong>{avgPrice}</strong>
+                      </span>
+                    )}
                   </div>
                 </Tooltip>
-              )}
-            </CircleMarker>
+              </CircleMarker>
+              <CircleMarker
+                center={marker.coords}
+                radius={Math.max(6, radius * 0.34) as any}
+                fillColor={color}
+                fillOpacity={0.72}
+                color={isDark ? '#f8fafc' : '#ffffff'}
+                opacity={0.85}
+                weight={1}
+                interactive={false}
+              />
+            </Fragment>
           );
         })}
-
-        {/* Individual Boat Markers */}
-        {boatMarkers.map((boat, idx) => (
-          <CircleMarker
-            key={`boat-${idx}`}
-            center={boat.coords as any}
-            radius={5}
-            fillColor="#f59e0b" // Tailwind amber-500
-            fillOpacity={0.9}
-            color={isDark ? "#ffffff" : "#b45309"}
-            weight={1.5}
-          >
-            <Tooltip direction="top" offset={[0, -5] as any} opacity={1} as any>
-              <div className="text-center font-sans">
-                <strong className="block text-sm">{boat.builder} {boat.model}</strong>
-                <span className="text-amber-600 font-bold">{boat.price_eur ? new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(boat.price_eur) : 'N/D'}</span> 
-                <span className="text-slate-500 text-xs ml-1">({boat.year_built || 'N/D'})</span>
-                <span className="block text-xs mt-1 text-slate-400 capitalize">{boat.country || 'Sconosciuto'}</span>
-              </div>
-            </Tooltip>
-          </CircleMarker>
-        ))}
-
       </MapContainer>
+      <div className={`absolute bottom-3 left-3 z-[400] rounded-xl px-3 py-2 shadow-lg border backdrop-blur-md ${isDark ? 'bg-slate-950/80 border-white/10 text-slate-200' : 'bg-white/90 border-slate-200 text-slate-700'}`}>
+        <div className="text-[10px] uppercase tracking-widest font-bold mb-1">
+          {lang === 'it' ? 'Densita mercato' : 'Market density'}
+        </div>
+        <div className="h-2 w-32 rounded-full bg-gradient-to-r from-sky-400 via-amber-400 via-orange-500 to-red-500" />
+        <div className="mt-1 flex justify-between text-[10px] font-semibold opacity-70">
+          <span>{lang === 'it' ? 'Bassa' : 'Low'}</span>
+          <span>{lang === 'it' ? 'Alta' : 'High'}</span>
+        </div>
+      </div>
     </div>
   );
 }
