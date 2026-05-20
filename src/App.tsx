@@ -565,45 +565,6 @@ function App() {
           )}
         </div>
 
-        {!result && !sellerResult && sources.length > 0 && (
-          <div className="no-print w-full max-w-4xl mb-5 animate-[fadeInUp_0.45s_ease-out]">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Anchor className="w-4 h-4 text-blue-500" />
-              <span className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textSubtle}`}>
-                {lang === 'it' ? 'Portali inclusi' : 'Included portals'}
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
-              {[...sources]
-                .sort((a, b) => b.count - a.count)
-                .map(source => {
-                  const logoUrl = getSourceLogoUrl(source.name);
-
-                  return (
-                    <div
-                      key={source.name}
-                      title={`${getSourceLabel(source.name)} · ${source.count.toLocaleString(numberLocale)} ${lang === 'it' ? 'annunci' : 'listings'}`}
-                      className={`group h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-900/55 hover:bg-slate-800/80' : 'bg-white/75 hover:bg-white'} backdrop-blur-xl shadow-sm flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-md`}
-                    >
-                      {logoUrl ? (
-                        <img
-                          src={logoUrl}
-                          alt={getSourceLabel(source.name)}
-                          className="h-7 w-7 sm:h-8 sm:w-8 object-contain rounded-md transition-transform group-hover:scale-105"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className={`text-xs font-black ${themeClasses.textMuted}`}>
-                          {getSourceLabel(source.name).slice(0, 2).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
-
         {/* Tab switcher Modello / Broker — visibile solo in home */}
         {!result && !sellerResult && (
           <div className="no-print flex gap-2 mb-5 justify-center animate-[fadeInUp_0.4s_ease-out]">
@@ -1056,15 +1017,36 @@ function App() {
                </div>
 
                {/* Portals & Animated Boat */}
-               <div className="mt-auto pt-16 w-full max-w-5xl mx-auto animate-[fadeInUp_1s_ease-out] relative h-40">
+               <div className="mt-auto pt-16 w-full max-w-5xl mx-auto animate-[fadeInUp_1s_ease-out] relative">
                  <p className={`text-center text-xs md:text-sm uppercase tracking-widest font-semibold mb-6 ${themeClasses.textSubtle} relative z-10`}>
                    {lang === 'it' ? 'Dati in tempo reale aggregati da' : 'Real-time data aggregated from'}
                  </p>
-                 <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 mb-10 opacity-70 hover:opacity-100 transition-opacity duration-500 relative z-10">
-                   <span className="text-xl md:text-2xl font-black text-slate-400 tracking-tight">Boat24</span>
-                   <span className="text-xl md:text-2xl font-black text-slate-400 tracking-tight">Yachtall</span>
-                   <span className="text-xl md:text-2xl font-black text-slate-400 tracking-tight">Mondial Broker</span>
-                   <span className="text-xl md:text-2xl font-black text-slate-400 tracking-tight">iNautia</span>
+                 <div className="flex flex-wrap justify-center items-center gap-x-7 gap-y-4 md:gap-x-12 mb-10 opacity-65 hover:opacity-100 transition-opacity duration-500 relative z-10 grayscale">
+                   {(sources.length > 0
+                     ? [...sources].sort((a, b) => b.count - a.count)
+                     : Object.keys(SOURCE_DOMAINS).map(name => ({ name, count: 0 }))
+                   ).map(source => {
+                     const logoUrl = getSourceLogoUrl(source.name);
+                     const label = getSourceLabel(source.name);
+
+                     return (
+                       <span
+                         key={source.name}
+                         title={source.count > 0 ? `${label} · ${source.count.toLocaleString(numberLocale)} ${lang === 'it' ? 'annunci' : 'listings'}` : label}
+                         className="inline-flex items-center gap-2 text-lg md:text-xl font-black text-slate-400 tracking-tight"
+                       >
+                         {logoUrl && (
+                           <img
+                             src={logoUrl}
+                             alt=""
+                             className="h-5 w-5 md:h-6 md:w-6 object-contain rounded opacity-80"
+                             loading="lazy"
+                           />
+                         )}
+                         <span>{label}</span>
+                       </span>
+                     );
+                   })}
                  </div>
                </div>
              </>
