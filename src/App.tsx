@@ -142,6 +142,58 @@ const handleBoatImageError = (event: React.SyntheticEvent<HTMLImageElement>) => 
 const sortListingsForDisplay = <T extends { is_duplicate?: boolean }>(listings: T[] = []) => (
   [...listings].sort((a, b) => Number(Boolean(a.is_duplicate)) - Number(Boolean(b.is_duplicate)))
 );
+const normalizeListingField = (value: unknown) => (
+  value === null || value === undefined ? '' : String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+);
+const getSellerListingGroupKey = (boat: any) => (
+  boat.dedup_identity ||
+  boat.hybrid_cluster_id ||
+  boat.visual_image_group_id ||
+  [
+    normalizeListingField(boat.builder),
+    normalizeListingField(boat.model),
+    normalizeListingField(boat.year_built),
+    normalizeListingField(boat.length),
+    normalizeListingField(boat.price_eur),
+    normalizeListingField(boat.country)
+  ].join('|')
+);
+const getBoatPortalSources = (boat: any): string[] => {
+  const sources: string[] = Array.isArray(boat.portal_sources) && boat.portal_sources.length > 0
+    ? boat.portal_sources.map(String)
+    : (boat.source ? [boat.source] : []);
+  return Array.from(new Set<string>(sources.filter(Boolean).map(String)));
+};
+const groupSellerListingsForDisplay = (listings: any[] = []) => {
+  const groups = new Map<string, any>();
+
+  listings.forEach(boat => {
+    const key = getSellerListingGroupKey(boat);
+    const current = groups.get(key);
+
+    if (!current) {
+      groups.set(key, {
+        ...boat,
+        portal_sources: getBoatPortalSources(boat),
+        raw_listing_count: boat.raw_listing_count || 1
+      });
+      return;
+    }
+
+    const mergedSources = Array.from(new Set([...getBoatPortalSources(current), ...getBoatPortalSources(boat)]));
+    const useBoatAsPrimary = (current.is_duplicate && !boat.is_duplicate) || (!current.image_url && boat.image_url);
+    const primary = useBoatAsPrimary ? { ...current, ...boat } : current;
+
+    groups.set(key, {
+      ...primary,
+      portal_sources: mergedSources,
+      raw_listing_count: Math.max(current.raw_listing_count || 1, 1) + Math.max(boat.raw_listing_count || 1, 1),
+      is_duplicate: false
+    });
+  });
+
+  return Array.from(groups.values());
+};
 
 // --- ToastContainer ---
 const ToastContainer = ({ toasts, remove }: { toasts: Toast[]; remove: (id: string) => void }) => (
@@ -648,7 +700,7 @@ function App() {
                 </div>
                 {/* Autocomplete dropdown — z-[9999] per non essere coperto da nulla */}
                 {showSellerSuggestions && sellerSuggestions.length > 0 && (
-                  <div className={`absolute z-[9999] top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-800' : 'bg-white'} overflow-hidden animate-[fadeInUp_0.15s_ease-out]`}
+                  <div className={`absolute z-[9999] top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-800' : 'bg-white'} overflow-y-auto max-h-[min(24rem,calc(100vh-18rem))] animate-[fadeInUp_0.15s_ease-out]`}
                     style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.35)' }}>
                     {/* Bottone principale "Cerca tutte le varianti" */}
                     <button
@@ -785,9 +837,16 @@ function App() {
               <div className={`px-6 py-4 border-b ${themeClasses.cardBorder} flex flex-wrap items-center justify-between gap-3 bg-black/5`}>
                 <div>
                   <h3 className="font-semibold text-sm">
-                    {sellerListings ? `${sellerListings.total.toLocaleString(numberLocale)} ${lang === 'it' ? 'annunci totali' : 'total listings'}${sellerListingsSourceFilter ? ` · ${sellerListingsSourceFilter}` : ''}` : lang === 'it' ? 'Tutti gli annunci' : 'All listings'}
+                    {sellerListings ? `${sellerListings.total.toLocaleString(numberLocale)} ${lang === 'it' ? 'barche' : 'boats'}${sellerListingsSourceFilter ? ` · ${sellerListingsSourceFilter}` : ''}` : lang === 'it' ? 'Tutte le barche' : 'All boats'}
                   </h3>
-                  {sellerListings && <p className={`text-xs ${themeClasses.textSubtle}`}>{lang === 'it' ? 'Pagina' : 'Page'} {sellerListings.page} {lang === 'it' ? 'di' : 'of'} {sellerListings.total_pages}</p>}
+                  {sellerListings && (
+                    <p className={`text-xs ${themeClasses.textSubtle}`}>
+                      {lang === 'it' ? 'Pagina' : 'Page'} {sellerListings.page} {lang === 'it' ? 'di' : 'of'} {sellerListings.total_pages}
+                      {sellerListings.total_raw > sellerListings.total && (
+                        <span> · {sellerListings.total_raw.toLocaleString(numberLocale)} {lang === 'it' ? 'pubblicazioni' : 'publications'}</span>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {sellerListingsSourceFilter && (
@@ -815,7 +874,7 @@ function App() {
                 </div>
               ) : sellerListings?.listings?.length > 0 ? (
                 <div className="divide-y divide-slate-700/20">
-                  {sortListingsForDisplay(sellerListings.listings).map((boat: any, i: number) => (
+                  {groupSellerListingsForDisplay(sellerListings.listings).map((boat: any, i: number) => (
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
                       <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
                         <img
@@ -828,19 +887,18 @@ function App() {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate">{boat.builder} {boat.model}</p>
-                          <div className={`flex items-center gap-2 text-xs ${themeClasses.textSubtle} mt-0.5`}>
+                          <div className={`flex items-center gap-2 text-xs ${themeClasses.textSubtle} mt-0.5 flex-wrap`}>
                             <span>{boat.year_built || '—'}</span>
                             {boat.length && <span>· {boat.length}m</span>}
                             {boat.country && <span>· {boat.country}</span>}
-                            {boat.source && (
-                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: getSourceColor(boat.source) + '22', color: getSourceColor(boat.source) }}>
-                                {boat.source}
+                            {getBoatPortalSources(boat).map(source => (
+                              <span key={source} className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: getSourceColor(source) + '22', color: getSourceColor(source) }}>
+                                {source}
                               </span>
-                            )}
-                            {boat.is_duplicate && (
-                              <span title={lang === 'it' ? 'Escluso dalle medie: stessa barca rilevata su altro portale/broker' : 'Excluded from averages: same boat detected on another portal/broker'}
-                                className={`px-1.5 py-0.5 rounded-md text-[9px] uppercase font-extrabold tracking-wider border border-dashed cursor-help ${isDark ? 'text-slate-500 border-slate-600 bg-slate-800/40' : 'text-slate-400 border-slate-300 bg-slate-50'}`}>
-                                ⊘ {lang === 'it' ? 'duplicato' : 'duplicate'}
+                            ))}
+                            {boat.raw_listing_count > 1 && (
+                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'}`}>
+                                {lang === 'it' ? `${boat.raw_listing_count} pubblicazioni` : `${boat.raw_listing_count} publications`}
                               </span>
                             )}
                           </div>
