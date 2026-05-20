@@ -526,6 +526,35 @@ function App() {
           )}
         </div>
 
+        {!result && !sellerResult && sources.length > 0 && (
+          <div className={`no-print w-full max-w-3xl mb-5 px-4 py-3 rounded-3xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-900/40' : 'bg-white/70'} backdrop-blur-xl shadow-sm animate-[fadeInUp_0.45s_ease-out]`}>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="shrink-0 flex items-center justify-center sm:justify-start gap-2">
+                <Anchor className="w-4 h-4 text-blue-500" />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textSubtle}`}>
+                  {lang === 'it' ? 'Portali inclusi' : 'Included portals'}
+                </span>
+              </div>
+              <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                {[...sources]
+                  .sort((a, b) => b.count - a.count)
+                  .map(source => (
+                    <span
+                      key={source.name}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${isDark ? 'bg-slate-800/70 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
+                    >
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getSourceColor(source.name) }} />
+                      <span>{source.name}</span>
+                      <span className={`${themeClasses.textSubtle} font-semibold`}>
+                        {source.count.toLocaleString(numberLocale)}
+                      </span>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tab switcher Modello / Broker — visibile solo in home */}
         {!result && !sellerResult && (
           <div className="no-print flex gap-2 mb-5 justify-center animate-[fadeInUp_0.4s_ease-out]">
