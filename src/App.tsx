@@ -76,10 +76,49 @@ const SOURCE_COLORS: Record<string, string> = {
   boat24: '#3b82f6', yachtall: '#8b5cf6', mondialbroker: '#10b981',
   inautia: '#f59e0b', navisnet: '#ef4444',
 };
+
+const SOURCE_DOMAINS: Record<string, string> = {
+  boat24: 'boat24.com',
+  topboats: 'topboats.com',
+  yachtall: 'yachtall.com',
+  mondialbroker: 'mondialbroker.com',
+  bandofboats: 'bandofboats.com',
+  todobarco: 'todobarco.com',
+  scanboat: 'scanboat.com',
+  boatsall: 'boatsall.com',
+  apolloduck: 'apolloduck.com',
+  batoo: 'batoo.it',
+  yachtingaddress: 'yachtingaddress.com',
+  boatnet: 'boatnet.de',
+  xboat: 'xboat.uk',
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  boat24: 'Boat24',
+  topboats: 'TopBoats',
+  yachtall: 'Yachtall',
+  mondialbroker: 'Mondial Broker',
+  bandofboats: 'Band of Boats',
+  todobarco: 'TodoBarco',
+  scanboat: 'ScanBoat',
+  boatsall: 'Boatsall',
+  apolloduck: 'Apollo Duck',
+  batoo: 'Batoo',
+  yachtingaddress: 'Yachting Address',
+  boatnet: 'BoatNet',
+  xboat: 'XBoat',
+};
+
 const getSourceColor = (s: string) => {
   const l = s.toLowerCase();
   const key = Object.keys(SOURCE_COLORS).find(k => l.includes(k));
   return key ? SOURCE_COLORS[key] : '#64748b';
+};
+const getSourceKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+const getSourceLabel = (s: string) => SOURCE_LABELS[getSourceKey(s)] || s;
+const getSourceLogoUrl = (s: string) => {
+  const domain = SOURCE_DOMAINS[getSourceKey(s)];
+  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : '';
 };
 
 // --- ToastContainer ---
@@ -527,30 +566,40 @@ function App() {
         </div>
 
         {!result && !sellerResult && sources.length > 0 && (
-          <div className={`no-print w-full max-w-3xl mb-5 px-4 py-3 rounded-3xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-900/40' : 'bg-white/70'} backdrop-blur-xl shadow-sm animate-[fadeInUp_0.45s_ease-out]`}>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="shrink-0 flex items-center justify-center sm:justify-start gap-2">
-                <Anchor className="w-4 h-4 text-blue-500" />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textSubtle}`}>
-                  {lang === 'it' ? 'Portali inclusi' : 'Included portals'}
-                </span>
-              </div>
-              <div className="flex flex-wrap justify-center sm:justify-start gap-2">
-                {[...sources]
-                  .sort((a, b) => b.count - a.count)
-                  .map(source => (
-                    <span
+          <div className="no-print w-full max-w-4xl mb-5 animate-[fadeInUp_0.45s_ease-out]">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Anchor className="w-4 h-4 text-blue-500" />
+              <span className={`text-[10px] font-black uppercase tracking-widest ${themeClasses.textSubtle}`}>
+                {lang === 'it' ? 'Portali inclusi' : 'Included portals'}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
+              {[...sources]
+                .sort((a, b) => b.count - a.count)
+                .map(source => {
+                  const logoUrl = getSourceLogoUrl(source.name);
+
+                  return (
+                    <div
                       key={source.name}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${isDark ? 'bg-slate-800/70 border-slate-700 text-slate-200' : 'bg-white border-slate-200 text-slate-700'}`}
+                      title={`${getSourceLabel(source.name)} · ${source.count.toLocaleString(numberLocale)} ${lang === 'it' ? 'annunci' : 'listings'}`}
+                      className={`group h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-900/55 hover:bg-slate-800/80' : 'bg-white/75 hover:bg-white'} backdrop-blur-xl shadow-sm flex items-center justify-center transition-all hover:-translate-y-0.5 hover:shadow-md`}
                     >
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getSourceColor(source.name) }} />
-                      <span>{source.name}</span>
-                      <span className={`${themeClasses.textSubtle} font-semibold`}>
-                        {source.count.toLocaleString(numberLocale)}
-                      </span>
-                    </span>
-                  ))}
-              </div>
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={getSourceLabel(source.name)}
+                          className="h-7 w-7 sm:h-8 sm:w-8 object-contain rounded-md transition-transform group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className={`text-xs font-black ${themeClasses.textMuted}`}>
+                          {getSourceLabel(source.name).slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}
