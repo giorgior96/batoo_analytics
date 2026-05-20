@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { Search, Anchor, Euro, Calendar, TrendingUp, TrendingDown, ChevronRight, Sun, Moon, AlertTriangle, MapPin, Ruler, Activity, Droplets, Zap, Download, ShieldCheck, FileText, Filter, Clock, X, Check, BarChart2, SlidersHorizontal, ChevronDown, ChevronUp, Star, ExternalLink, Maximize, Minimize, Sailboat } from 'lucide-react';
+import { Search, Anchor, Euro, Calendar, TrendingUp, TrendingDown, ChevronRight, Sun, Moon, AlertTriangle, MapPin, Ruler, Activity, Droplets, Zap, Download, FileText, Filter, Clock, X, Check, BarChart2, SlidersHorizontal, ChevronDown, ChevronUp, Star, ExternalLink, Maximize, Minimize, Sailboat } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ComposedChart, Area, BarChart, Bar, Cell } from 'recharts';
 import { mp } from './analytics';
 
@@ -70,7 +70,6 @@ type Toast = { id: string; message: string; type: 'success' | 'error' | 'info' }
 
 // --- Constants ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
-const BOAT_STOCK_IMAGE_URL = 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
 const BOAT_LOCAL_FALLBACK_IMAGE_URL = '/yacht-top-view.svg';
 
 const RECENT_SEARCHES_KEY = 'batoo_recent_searches';
@@ -122,22 +121,55 @@ const getSourceLogoUrl = (s: string) => {
   const domain = SOURCE_DOMAINS[getSourceKey(s)];
   return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : '';
 };
-const getBoatImageSrc = (imageUrl?: string | null) => (
-  imageUrl ? `${API_BASE_URL}/proxy-image?url=${encodeURIComponent(imageUrl)}` : BOAT_STOCK_IMAGE_URL
+const getProxiedBoatImageSrc = (imageUrl?: string | null) => (
+  imageUrl ? `${API_BASE_URL}/proxy-image?url=${encodeURIComponent(imageUrl)}` : ''
+);
+const getBoatModelKey = (boat: any = {}) => [
+  normalizeListingField(boat.builder),
+  normalizeListingField(boat.model)
+].join('|');
+const getBoatImageCandidates = (boat: any = {}, listings: any[] = []) => {
+  const modelKey = getBoatModelKey(boat);
+  const imageUrls = [
+    boat?.image_url,
+    ...(Array.isArray(boat?.image_urls) ? boat.image_urls : []),
+    ...listings
+      .filter(candidate => modelKey && getBoatModelKey(candidate) === modelKey)
+      .flatMap(candidate => [
+        candidate.image_url,
+        ...(Array.isArray(candidate.image_urls) ? candidate.image_urls : [])
+      ])
+  ].filter(Boolean).map(String);
+
+  return Array.from(new Set(imageUrls)).map(getProxiedBoatImageSrc).filter(Boolean);
+};
+const getBoatImageSrc = (boat: any = {}, listings: any[] = []) => (
+  getBoatImageCandidates(boat, listings)[0] || BOAT_LOCAL_FALLBACK_IMAGE_URL
+);
+const getBoatImageCandidatesData = (boat: any = {}, listings: any[] = []) => (
+  JSON.stringify(getBoatImageCandidates(boat, listings))
 );
 const handleBoatImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
   const image = event.currentTarget;
+  let candidates: string[] = [];
+  try {
+    candidates = image.dataset.imageCandidates ? JSON.parse(image.dataset.imageCandidates) : [];
+  } catch {
+    candidates = [];
+  }
+  const currentIndex = Number(image.dataset.candidateIndex || 0);
+  const nextCandidate = candidates[currentIndex + 1];
 
   if (image.dataset.fallback === 'local') return;
 
-  if (image.dataset.fallback === 'stock') {
-    image.dataset.fallback = 'local';
-    image.src = BOAT_LOCAL_FALLBACK_IMAGE_URL;
+  if (nextCandidate) {
+    image.dataset.candidateIndex = String(currentIndex + 1);
+    image.src = nextCandidate;
     return;
   }
 
-  image.dataset.fallback = 'stock';
-  image.src = BOAT_STOCK_IMAGE_URL;
+  image.dataset.fallback = 'local';
+  image.src = BOAT_LOCAL_FALLBACK_IMAGE_URL;
 };
 const sortListingsForDisplay = <T extends { is_duplicate?: boolean }>(listings: T[] = []) => (
   [...listings].sort((a, b) => Number(Boolean(a.is_duplicate)) - Number(Boolean(b.is_duplicate)))
@@ -700,7 +732,7 @@ function App() {
                 </div>
                 {/* Autocomplete dropdown — z-[9999] per non essere coperto da nulla */}
                 {showSellerSuggestions && sellerSuggestions.length > 0 && (
-                  <div className={`absolute z-[9999] top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-800' : 'bg-white'} overflow-y-auto max-h-[min(24rem,calc(100vh-18rem))] animate-[fadeInUp_0.15s_ease-out]`}
+                  <div className={`absolute z-[9999] top-full left-0 right-0 mt-2 rounded-2xl shadow-2xl border ${themeClasses.cardBorder} ${isDark ? 'bg-slate-800' : 'bg-white'} overflow-y-auto max-h-44 sm:max-h-64 overscroll-contain animate-[fadeInUp_0.15s_ease-out]`}
                     style={{ boxShadow: '0 20px 40px rgba(0,0,0,0.35)' }}>
                     {/* Bottone principale "Cerca tutte le varianti" */}
                     <button
@@ -878,9 +910,10 @@ function App() {
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
                       <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
                         <img
-                          src={getBoatImageSrc(boat.image_url)}
+                          src={getBoatImageSrc(boat, sellerListings.listings)}
                           alt=""
-                          data-fallback={boat.image_url ? undefined : 'stock'}
+                          data-image-candidates={getBoatImageCandidatesData(boat, sellerListings.listings)}
+                          data-candidate-index="0"
                           onError={handleBoatImageError}
                           className="w-16 h-11 object-cover rounded-xl shrink-0"
                           loading="lazy"
@@ -1172,8 +1205,9 @@ function App() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative group shrink-0">
                         <img
-                          src={getBoatImageSrc(result.comparables?.[0]?.image_url)}
-                          data-fallback={result.comparables?.[0]?.image_url ? undefined : 'stock'}
+                          src={getBoatImageSrc(result.comparables?.[0], result.comparables)}
+                          data-image-candidates={getBoatImageCandidatesData(result.comparables?.[0], result.comparables)}
+                          data-candidate-index="0"
                           onError={handleBoatImageError}
                           crossOrigin="anonymous"
                           alt="boat preview"
@@ -1231,47 +1265,6 @@ function App() {
                      </div>
                   </div>
                 </div>
-
-                {/* Price opportunity text */}
-                {result.valuation.market_share_countries?.length > 1 && (
-                  <div className={`mt-6 p-4 rounded-2xl ${isDark ? 'bg-blue-500/5 border border-blue-500/10' : 'bg-blue-50 border border-blue-100'} flex items-start`}>
-                    <ShieldCheck className="w-5 h-5 mr-3 text-blue-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold mb-1 text-blue-500">{lang === 'it' ? 'Opportunità di prezzo' : 'Price opportunity'}:</p>
-                      <p className={`text-xs leading-relaxed ${themeClasses.textMuted}`}>
-                        {(() => {
-                          const countries = result.valuation.market_share_countries;
-                          const cheaper = countries.reduce((prev: any, curr: any) => prev.avg_price < curr.avg_price ? prev : curr);
-                          const expensive = countries.reduce((prev: any, curr: any) => prev.avg_price > curr.avg_price ? prev : curr);
-                          const diff = ((expensive.avg_price - cheaper.avg_price) / cheaper.avg_price * 100).toFixed(0);
-                          
-                          if (parseFloat(diff) > 10) {
-                            return lang === 'it' 
-                              ? `Differenza interessante tra ${cheaper.name.toUpperCase()} e ${expensive.name.toUpperCase()}. Acquistare in ${cheaper.name} potrebbe far risparmiare circa il ${diff}% rispetto ai prezzi in ${expensive.name}.`
-                              : `Meaningful price difference between ${cheaper.name.toUpperCase()} and ${expensive.name.toUpperCase()}. Buying in ${cheaper.name} could save about ${diff}% compared to prices in ${expensive.name}.`;
-                          } else {
-                            return lang === 'it'
-                              ? `Mercato europeo stabile e bilanciato tra i vari paesi analizzati (${countries.map((c:any) => c.name).join(', ')}).`
-                              : `Stable and balanced European market across the analyzed countries (${countries.map((c:any) => c.name).join(', ')}).`;
-                          }
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* AI Insight Text */}
-                {result.ai_insight && (
-                  <div className={`mt-3 p-4 rounded-2xl ${isDark ? 'bg-purple-500/5 border border-purple-500/10' : 'bg-purple-50 border border-purple-100'} flex items-start`}>
-                    <Zap className="w-5 h-5 mr-3 text-purple-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-semibold mb-1 text-purple-500">AI Batoo Insight:</p>
-                      <p className={`text-xs leading-relaxed ${themeClasses.textMuted}`}>
-                        {result.ai_insight}
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Mappa mercato per nazione */}
@@ -1500,9 +1493,10 @@ function App() {
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
                       <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
                         <img
-                          src={getBoatImageSrc(boat.image_url)}
+                          src={getBoatImageSrc(boat, evaluateListings.listings)}
                           alt=""
-                          data-fallback={boat.image_url ? undefined : 'stock'}
+                          data-image-candidates={getBoatImageCandidatesData(boat, evaluateListings.listings)}
+                          data-candidate-index="0"
                           onError={handleBoatImageError}
                           className="w-16 h-11 object-cover rounded-xl shrink-0"
                           loading="lazy"
@@ -1679,9 +1673,10 @@ function App() {
               {/* Foto Auto-selezionata */}
               <div className="w-1/3 shrink-0">
                 <img
-                  src={getBoatImageSrc(result.comparables?.[0]?.image_url)}
+                  src={getBoatImageSrc(result.comparables?.[0], result.comparables)}
                   alt="boat"
-                  data-fallback={result.comparables?.[0]?.image_url ? undefined : 'stock'}
+                  data-image-candidates={getBoatImageCandidatesData(result.comparables?.[0], result.comparables)}
+                  data-candidate-index="0"
                   onError={handleBoatImageError}
                   crossOrigin="anonymous"
                   className="w-full h-48 object-cover rounded-xl border-2 border-slate-100"
@@ -1709,40 +1704,6 @@ function App() {
                 </div>
               </div>
             </div>
-
-            {/* AI Insight */}
-            <div className="mb-6">
-              <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Batoo AI Insight</h3>
-              <p className="text-sm leading-relaxed text-slate-700 border-l-4 border-blue-500 pl-4 py-1">
-                {result.ai_insight}
-              </p>
-            </div>
-
-            {/* Opportunità per paese */}
-            {result.valuation.market_share_countries?.length > 1 && (
-              <div className="mb-6">
-                <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">{lang === 'it' ? 'Opportunità per Paese' : 'Country Price Opportunity'}</h3>
-                <p className="text-sm leading-relaxed text-slate-700 border-l-4 border-emerald-500 pl-4 py-1 bg-emerald-50/30">
-                  {(() => {
-                    const countries = result.valuation.market_share_countries;
-                    const cheaper = countries.reduce((prev: any, curr: any) => prev.avg_price < curr.avg_price ? prev : curr);
-                    const expensive = countries.reduce((prev: any, curr: any) => prev.avg_price > curr.avg_price ? prev : curr);
-                    const diff = ((expensive.avg_price - cheaper.avg_price) / cheaper.avg_price * 100).toFixed(0);
-                    
-                    if (parseFloat(diff) > 10) {
-                      return lang === 'it' 
-                        ? `Differenza interessante tra ${cheaper.name.toUpperCase()} e ${expensive.name.toUpperCase()}. Acquistare in ${cheaper.name} potrebbe far risparmiare circa il ${diff}% rispetto ai prezzi in ${expensive.name}.`
-                        : `Meaningful price difference between ${cheaper.name.toUpperCase()} and ${expensive.name.toUpperCase()}. Buying in ${cheaper.name} could save about ${diff}% compared to prices in ${expensive.name}.`;
-                    } else {
-                      return lang === 'it'
-                        ? `Mercato europeo stabile e bilanciato tra i vari paesi analizzati (${countries.map((c:any) => c.name).join(', ')}).`
-                        : `Stable and balanced European market across the analyzed countries (${countries.map((c:any) => c.name).join(', ')}).`;
-                    }
-                  })()}
-                </p>
-              </div>
-            )}
-
             {/* Trend Chart (Shrunk down for PDF) */}
             {result.valuation.price_trend?.length > 0 && (
               <div className="mb-6 h-[180px] w-full border border-slate-100 rounded-xl p-4 bg-slate-50/50 overflow-hidden">
@@ -1766,8 +1727,9 @@ function App() {
                   <div key={idx} className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
                     <div className="flex items-center space-x-4">
                        <img
-                         src={getBoatImageSrc(boat.image_url)}
-                         data-fallback={boat.image_url ? undefined : 'stock'}
+                         src={getBoatImageSrc(boat, result.comparables)}
+                         data-image-candidates={getBoatImageCandidatesData(boat, result.comparables)}
+                         data-candidate-index="0"
                          onError={handleBoatImageError}
                          crossOrigin="anonymous"
                          className="w-14 h-10 object-cover rounded shadow-sm border border-slate-200"
@@ -1806,8 +1768,9 @@ function App() {
                     <div key={`full-${idx}`} className="flex justify-between items-center py-3 border-b border-slate-100 last:border-0">
                       <div className="flex items-center space-x-4">
                          <img
-                           src={getBoatImageSrc(boat.image_url)}
-                           data-fallback={boat.image_url ? undefined : 'stock'}
+                           src={getBoatImageSrc(boat, result.comparables)}
+                           data-image-candidates={getBoatImageCandidatesData(boat, result.comparables)}
+                           data-candidate-index="0"
                            onError={handleBoatImageError}
                            crossOrigin="anonymous"
                            className="w-20 h-14 object-cover rounded shadow-sm border border-slate-200"
