@@ -217,6 +217,19 @@ const getBoatPortalLinks = (boat: any): { source: string; url: string }[] => {
     ? [{ source: boat.source || 'Annuncio', url: String(boat.url) }]
     : [];
 };
+const mergePortalLinks = (...linkGroups: { source: string; url: string }[][]) => {
+  const seen = new Set<string>();
+  return linkGroups.flat().filter(link => {
+    if (!link.source || !link.url) return false;
+    const key = `${link.source.toLowerCase()}|${link.url}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+const mergeImageUrls = (...imageGroups: string[][]) => (
+  Array.from(new Set(imageGroups.flat().filter(Boolean).map(String)))
+);
 const groupSellerListingsForDisplay = (listings: any[] = []) => {
   const groups = new Map<string, any>();
 
@@ -228,18 +241,29 @@ const groupSellerListingsForDisplay = (listings: any[] = []) => {
       groups.set(key, {
         ...boat,
         portal_sources: getBoatPortalSources(boat),
+        portal_links: getBoatPortalLinks(boat),
+        image_urls: mergeImageUrls(Array.isArray(boat.image_urls) ? boat.image_urls : [], boat.image_url ? [boat.image_url] : []),
         raw_listing_count: boat.raw_listing_count || 1
       });
       return;
     }
 
     const mergedSources = Array.from(new Set([...getBoatPortalSources(current), ...getBoatPortalSources(boat)]));
+    const mergedLinks = mergePortalLinks(getBoatPortalLinks(current), getBoatPortalLinks(boat));
+    const mergedImages = mergeImageUrls(
+      Array.isArray(current.image_urls) ? current.image_urls : [],
+      current.image_url ? [current.image_url] : [],
+      Array.isArray(boat.image_urls) ? boat.image_urls : [],
+      boat.image_url ? [boat.image_url] : []
+    );
     const useBoatAsPrimary = (current.is_duplicate && !boat.is_duplicate) || (!current.image_url && boat.image_url);
     const primary = useBoatAsPrimary ? { ...current, ...boat } : current;
 
     groups.set(key, {
       ...primary,
       portal_sources: mergedSources,
+      portal_links: mergedLinks,
+      image_urls: mergedImages,
       raw_listing_count: Math.max(current.raw_listing_count || 1, 1) + Math.max(boat.raw_listing_count || 1, 1),
       is_duplicate: false
     });
