@@ -70,6 +70,8 @@ type Toast = { id: string; message: string; type: 'success' | 'error' | 'info' }
 
 // --- Constants ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const BOAT_STOCK_IMAGE_URL = 'https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&w=900&q=80';
+const BOAT_LOCAL_FALLBACK_IMAGE_URL = '/yacht-top-view.svg';
 
 const RECENT_SEARCHES_KEY = 'batoo_recent_searches';
 const SOURCE_COLORS: Record<string, string> = {
@@ -120,6 +122,26 @@ const getSourceLogoUrl = (s: string) => {
   const domain = SOURCE_DOMAINS[getSourceKey(s)];
   return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : '';
 };
+const getBoatImageSrc = (imageUrl?: string | null) => (
+  imageUrl ? `${API_BASE_URL}/proxy-image?url=${encodeURIComponent(imageUrl)}` : BOAT_STOCK_IMAGE_URL
+);
+const handleBoatImageError = (event: React.SyntheticEvent<HTMLImageElement>) => {
+  const image = event.currentTarget;
+
+  if (image.dataset.fallback === 'local') return;
+
+  if (image.dataset.fallback === 'stock') {
+    image.dataset.fallback = 'local';
+    image.src = BOAT_LOCAL_FALLBACK_IMAGE_URL;
+    return;
+  }
+
+  image.dataset.fallback = 'stock';
+  image.src = BOAT_STOCK_IMAGE_URL;
+};
+const sortListingsForDisplay = <T extends { is_duplicate?: boolean }>(listings: T[] = []) => (
+  [...listings].sort((a, b) => Number(Boolean(a.is_duplicate)) - Number(Boolean(b.is_duplicate)))
+);
 
 // --- ToastContainer ---
 const ToastContainer = ({ toasts, remove }: { toasts: Toast[]; remove: (id: string) => void }) => (
@@ -793,17 +815,17 @@ function App() {
                 </div>
               ) : sellerListings?.listings?.length > 0 ? (
                 <div className="divide-y divide-slate-700/20">
-                  {sellerListings.listings.map((boat: any, i: number) => (
+                  {sortListingsForDisplay(sellerListings.listings).map((boat: any, i: number) => (
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
                       <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
-                        {boat.image_url ? (
-                          <img src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(boat.image_url)}`} alt=""
-                            className="w-16 h-11 object-cover rounded-xl shrink-0" />
-                        ) : (
-                          <div className={`w-16 h-11 rounded-xl shrink-0 ${isDark ? 'bg-slate-700' : 'bg-slate-100'} flex items-center justify-center`}>
-                            <span className="text-xl">🚤</span>
-                          </div>
-                        )}
+                        <img
+                          src={getBoatImageSrc(boat.image_url)}
+                          alt=""
+                          data-fallback={boat.image_url ? undefined : 'stock'}
+                          onError={handleBoatImageError}
+                          className="w-16 h-11 object-cover rounded-xl shrink-0"
+                          loading="lazy"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate">{boat.builder} {boat.model}</p>
                           <div className={`flex items-center gap-2 text-xs ${themeClasses.textSubtle} mt-0.5`}>
@@ -1090,16 +1112,16 @@ function App() {
                 <div className="flex flex-col gap-3 mb-4">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
-                      {result.comparables?.[0]?.image_url && (
-                        <div className="relative group shrink-0">
-                          <img 
-                            src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(result.comparables[0].image_url)}`} 
-                            crossOrigin="anonymous"
-                            alt="boat preview" 
-                            className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 object-cover rounded-2xl shadow-md border border-slate-500/20 shrink-0" 
-                          />
-                        </div>
-                      )}
+                      <div className="relative group shrink-0">
+                        <img
+                          src={getBoatImageSrc(result.comparables?.[0]?.image_url)}
+                          data-fallback={result.comparables?.[0]?.image_url ? undefined : 'stock'}
+                          onError={handleBoatImageError}
+                          crossOrigin="anonymous"
+                          alt="boat preview"
+                          className="w-14 h-14 sm:w-16 sm:h-16 md:w-24 md:h-24 object-cover rounded-2xl shadow-md border border-slate-500/20 shrink-0"
+                        />
+                      </div>
                       <div className="min-w-0">
                         <p className={`${themeClasses.textSubtle} font-medium text-[10px] sm:text-xs mb-1 uppercase tracking-widest`}>{lang === 'it' ? 'Analisi di Mercato B2B' : 'B2B Market Analysis'}</p>
                         <h2 className="text-xl sm:text-2xl md:text-4xl font-bold capitalize truncate">{result.query}</h2>
@@ -1416,17 +1438,17 @@ function App() {
                 </div>
               ) : evaluateListings?.listings?.length > 0 ? (
                 <div className="divide-y divide-slate-700/20">
-                  {evaluateListings.listings.map((boat: any, i: number) => (
+                  {sortListingsForDisplay(evaluateListings.listings).map((boat: any, i: number) => (
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
                       <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
-                        {boat.image_url ? (
-                          <img src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(boat.image_url)}`} alt=""
-                            className="w-16 h-11 object-cover rounded-xl shrink-0" loading="lazy" />
-                        ) : (
-                          <div className={`w-16 h-11 rounded-xl shrink-0 ${isDark ? 'bg-slate-700' : 'bg-slate-100'} flex items-center justify-center`}>
-                            <span className="text-xl">🚤</span>
-                          </div>
-                        )}
+                        <img
+                          src={getBoatImageSrc(boat.image_url)}
+                          alt=""
+                          data-fallback={boat.image_url ? undefined : 'stock'}
+                          onError={handleBoatImageError}
+                          className="w-16 h-11 object-cover rounded-xl shrink-0"
+                          loading="lazy"
+                        />
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate">{boat.builder} {boat.model}</p>
                           <div className={`flex items-center gap-2 text-xs ${themeClasses.textSubtle} mt-0.5 flex-wrap`}>
@@ -1598,18 +1620,14 @@ function App() {
             <div className="flex gap-6 mb-6">
               {/* Foto Auto-selezionata */}
               <div className="w-1/3 shrink-0">
-                {result.comparables?.[0]?.image_url ? (
-                  <img 
-                    src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(result.comparables[0].image_url)}`} 
-                    alt="boat" 
-                    crossOrigin="anonymous"
-                    className="w-full h-48 object-cover rounded-xl border-2 border-slate-100"
-                  />
-                ) : (
-                  <div className="w-full h-48 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300 border-2 border-slate-100">
-                    <Anchor className="w-10 h-10" />
-                  </div>
-                )}
+                <img
+                  src={getBoatImageSrc(result.comparables?.[0]?.image_url)}
+                  alt="boat"
+                  data-fallback={result.comparables?.[0]?.image_url ? undefined : 'stock'}
+                  onError={handleBoatImageError}
+                  crossOrigin="anonymous"
+                  className="w-full h-48 object-cover rounded-xl border-2 border-slate-100"
+                />
               </div>
               
               {/* Box Numerici */}
@@ -1686,14 +1704,16 @@ function App() {
             <div>
               <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-2">{lang === "it" ? "Top 5 Annunci Recenti Rilevati" : "Top 5 Recent Listings Detected"}</h3>
               <div className="space-y-2">
-                {result.comparables.slice(0, 5).map((boat: any, idx: number) => (
+                {sortListingsForDisplay(result.comparables).slice(0, 5).map((boat: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
                     <div className="flex items-center space-x-4">
-                       {boat.image_url ? (
-                         <img src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(boat.image_url)}`} crossOrigin="anonymous" className="w-14 h-10 object-cover rounded shadow-sm border border-slate-200" />
-                       ) : (
-                         <div className="w-14 h-10 bg-slate-100 rounded border border-slate-200 flex items-center justify-center"><Anchor className="w-3 h-3 text-slate-300" /></div>
-                       )}
+                       <img
+                         src={getBoatImageSrc(boat.image_url)}
+                         data-fallback={boat.image_url ? undefined : 'stock'}
+                         onError={handleBoatImageError}
+                         crossOrigin="anonymous"
+                         className="w-14 h-10 object-cover rounded shadow-sm border border-slate-200"
+                       />
                        <div>
                          <p className={`font-bold text-xs text-slate-800 ${boat.status === false ? 'line-through opacity-60' : ''}`}>{boat.builder} {boat.model}</p>
                          <p className="text-[10px] text-slate-500 mt-0.5 font-medium">{lang === "it" ? "Anno" : "Year"}: {boat.year_built} &bull; {lang === "it" ? "Luogo" : "Location"}: {boat.country || "N/D"} {boat.status === false ? (lang === "it" ? "(Rimosso)" : "(Removed)") : ""} {boat.source && `• ${lang === "it" ? "Fonte" : "Source"}: ${boat.source}`}</p>
@@ -1724,14 +1744,16 @@ function App() {
                 </div>
 
                 <div className="space-y-4">
-                  {result.comparables.map((boat: any, idx: number) => (
+                  {sortListingsForDisplay(result.comparables).map((boat: any, idx: number) => (
                     <div key={`full-${idx}`} className="flex justify-between items-center py-3 border-b border-slate-100 last:border-0">
                       <div className="flex items-center space-x-4">
-                         {boat.image_url ? (
-                           <img src={`${API_BASE_URL}/proxy-image?url=${encodeURIComponent(boat.image_url)}`} crossOrigin="anonymous" className="w-20 h-14 object-cover rounded shadow-sm border border-slate-200" />
-                         ) : (
-                           <div className="w-20 h-14 bg-slate-100 rounded border border-slate-200 flex items-center justify-center"><Anchor className="w-5 h-5 text-slate-300" /></div>
-                         )}
+                         <img
+                           src={getBoatImageSrc(boat.image_url)}
+                           data-fallback={boat.image_url ? undefined : 'stock'}
+                           onError={handleBoatImageError}
+                           crossOrigin="anonymous"
+                           className="w-20 h-14 object-cover rounded shadow-sm border border-slate-200"
+                         />
                          <div className="flex flex-col">
                            <p className={`font-bold text-sm text-slate-800 ${boat.status === false ? 'line-through opacity-60' : ''}`}>{boat.builder} {boat.model}</p>
                            <p className="text-xs text-slate-500 mt-0.5 font-medium">{lang === "it" ? "Anno" : "Year"}: {boat.year_built} &bull; {lang === "it" ? "Luogo" : "Location"}: {boat.country || "N/D"} {boat.status === false ? (lang === "it" ? "(Rimosso)" : "(Removed)") : ""} {boat.source && `• ${lang === "it" ? "Fonte" : "Source"}: ${boat.source}`}</p>
