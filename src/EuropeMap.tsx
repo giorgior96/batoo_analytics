@@ -205,7 +205,7 @@ export default function EuropeMap({ countriesData, isDark, lang }: EuropeMapProp
       </MapContainer>
       <div className={`absolute bottom-3 left-3 z-[400] rounded-xl px-3 py-2 shadow-lg border backdrop-blur-md ${isDark ? 'bg-slate-950/80 border-white/10 text-slate-200' : 'bg-white/90 border-slate-200 text-slate-700'}`}>
         <div className="text-[10px] uppercase tracking-widest font-bold mb-1">
-          {lang === 'it' ? 'Densita mercato' : 'Market density'}
+          {lang === 'it' ? 'Presenza annunci' : 'Listings volume'}
         </div>
         <div className="h-2 w-32 rounded-full bg-gradient-to-r from-sky-400 via-amber-400 via-orange-500 to-red-500" />
         <div className="mt-1 flex justify-between text-[10px] font-semibold opacity-70">

@@ -67,12 +67,6 @@ import EuropeMap from './EuropeMap';
 // --- Types ---
 type SortOrder = 'year_desc' | 'price_asc' | 'price_desc';
 type Toast = { id: string; message: string; type: 'success' | 'error' | 'info' };
-type ApiStatus = {
-  data_source?: string;
-  sqlite_path?: string;
-  total_boats?: number;
-  deduped_boats?: number;
-};
 
 // --- Constants ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -113,7 +107,6 @@ function App() {
   const [error, setError] = useState('');
 
   const [totalBoatsDB, setTotalBoatsDB] = useState<number>(0);
-  const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
 
   // --- Broker / Advanced filters ---
   const [activeTab, setActiveTab] = useState<'model' | 'broker'>('model');
@@ -202,7 +195,6 @@ function App() {
   // Main data loading effect
   useEffect(() => {
     axios.get(`${API_BASE_URL}/`).then(res => {
-      setApiStatus(res.data);
       if (res.data?.total_boats) setTotalBoatsDB(res.data.total_boats);
     }).catch(console.error);
 
@@ -518,29 +510,13 @@ function App() {
           {!result && (
             <div className="animate-[fadeInUp_0.5s_ease-out]">
               <div className="inline-flex flex-col items-center justify-center mb-4 sm:mb-6 py-2 px-4 sm:px-6 rounded-2xl bg-blue-500/10 border border-blue-500/20 backdrop-blur-sm">
-                <span className={`text-xs font-bold uppercase tracking-widest ${themeClasses.textSubtle} mb-1`}>{lang === 'it' ? 'Database Aggiornato' : 'Database Updated'}</span>
+                <span className={`text-xs font-bold uppercase tracking-widest ${themeClasses.textSubtle} mb-1`}>{lang === 'it' ? 'Dati aggiornati' : 'Updated data'}</span>
                 <div className="flex items-baseline space-x-2">
                   <span className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                     {totalBoatsDB > 0 ? <AnimatedCounter end={totalBoatsDB} duration={2500} locale={numberLocale} /> : <span className="opacity-50">...</span>}
                   </span>
                   <span className={`text-sm font-semibold ${themeClasses.textMuted}`}>{lang === 'it' ? '+ barche analizzate' : '+ boats analyzed'}</span>
                 </div>
-                {apiStatus?.data_source === 'sqlite' && (
-                  <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider">
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${isDark ? 'bg-emerald-400/10 text-emerald-300' : 'bg-emerald-50 text-emerald-700'}`}>
-                      <ShieldCheck className="w-3 h-3" />
-                      SQLite Search DB
-                    </span>
-                    <span className={`px-2 py-1 rounded-full ${isDark ? 'bg-blue-400/10 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
-                      {lang === 'it' ? 'Dedup Search' : 'Search dedup'}
-                    </span>
-                    {apiStatus.deduped_boats && (
-                      <span className={`px-2 py-1 rounded-full ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-white/80 text-slate-600'}`}>
-                        {apiStatus.deduped_boats.toLocaleString(numberLocale)} {lang === 'it' ? 'uniche' : 'unique'}
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
               <p className={`text-base sm:text-lg md:text-xl ${themeClasses.textMuted} max-w-xl mx-auto font-light leading-relaxed px-2`}>
                 {lang === 'it' ? "L'intelligenza artificiale per il mercato nautico." : "Artificial intelligence for the nautical market."}<br className="hidden md:block"/> 
@@ -1116,12 +1092,12 @@ function App() {
                   </div>
                 </div>
 
-                {/* Arbitrage Insight Text */}
+                {/* Price opportunity text */}
                 {result.valuation.market_share_countries?.length > 1 && (
                   <div className={`mt-6 p-4 rounded-2xl ${isDark ? 'bg-blue-500/5 border border-blue-500/10' : 'bg-blue-50 border border-blue-100'} flex items-start`}>
                     <ShieldCheck className="w-5 h-5 mr-3 text-blue-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold mb-1 text-blue-500">{lang === 'it' ? 'Arbitraggio (Market Insight)' : 'Arbitrage (Market Insight)'}:</p>
+                      <p className="text-sm font-semibold mb-1 text-blue-500">{lang === 'it' ? 'Opportunità di prezzo' : 'Price opportunity'}:</p>
                       <p className={`text-xs leading-relaxed ${themeClasses.textMuted}`}>
                         {(() => {
                           const countries = result.valuation.market_share_countries;
@@ -1131,8 +1107,8 @@ function App() {
                           
                           if (parseFloat(diff) > 10) {
                             return lang === 'it' 
-                              ? `Opportunità di arbitraggio tra ${cheaper.name.toUpperCase()} e ${expensive.name.toUpperCase()}. Acquistare in ${cheaper.name} potrebbe far risparmiare circa il ${diff}% rispetto ai prezzi in ${expensive.name}.`
-                              : `Arbitrage opportunity between ${cheaper.name.toUpperCase()} and ${expensive.name.toUpperCase()}. Buying in ${cheaper.name} could save about ${diff}% compared to prices in ${expensive.name}.`;
+                              ? `Differenza interessante tra ${cheaper.name.toUpperCase()} e ${expensive.name.toUpperCase()}. Acquistare in ${cheaper.name} potrebbe far risparmiare circa il ${diff}% rispetto ai prezzi in ${expensive.name}.`
+                              : `Meaningful price difference between ${cheaper.name.toUpperCase()} and ${expensive.name.toUpperCase()}. Buying in ${cheaper.name} could save about ${diff}% compared to prices in ${expensive.name}.`;
                           } else {
                             return lang === 'it'
                               ? `Mercato europeo stabile e bilanciato tra i vari paesi analizzati (${countries.map((c:any) => c.name).join(', ')}).`
@@ -1158,10 +1134,10 @@ function App() {
                 )}
               </div>
 
-              {/* Heatmap mercato per nazione */}
+              {/* Mappa mercato per nazione */}
               <div className={`${themeClasses.cardBg} backdrop-blur-xl border ${themeClasses.cardBorder} p-6 rounded-3xl shadow-lg flex flex-col h-[380px] md:h-[420px] overflow-hidden`}>
                 <p className={`${themeClasses.textSubtle} font-medium text-xs mb-3 uppercase tracking-widest flex items-center shrink-0`}>
-                   <MapPin className="w-3.5 h-3.5 mr-1.5"/> {lang === 'it' ? 'Heatmap Mercato per Nazione' : 'Market Heatmap by Country'}
+                   <MapPin className="w-3.5 h-3.5 mr-1.5"/> {lang === 'it' ? 'Mappa del Mercato per Nazione' : 'Market Map by Country'}
                 </p>
                 {result.valuation.market_share_countries?.length > 0 ? (
                   <div className="flex-1 w-full relative flex flex-col min-h-0">
@@ -1249,18 +1225,10 @@ function App() {
                     <span>⚡</span>
                     <span>
                       {lang === 'it'
-                        ? `${result.duplicates_removed} duplicati cross-portale esclusi dalle medie`
-                        : `${result.duplicates_removed} cross-portal duplicates excluded from averages`
+                        ? `${result.duplicates_removed} annunci ripetuti esclusi dalle medie`
+                        : `${result.duplicates_removed} repeated listings excluded from averages`
                       }
                     </span>
-                  </div>
-                )}
-                {apiStatus?.data_source === 'sqlite' && (
-                  <div className={`flex items-center gap-1.5 text-[10px] font-semibold mt-1.5 px-2 py-1 rounded-lg w-fit ${
-                    isDark ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  }`}>
-                    <ShieldCheck className="w-3 h-3" />
-                    <span>{lang === 'it' ? 'SQLite + dedup Batoo Search attivi' : 'SQLite + Batoo Search dedup active'}</span>
                   </div>
                 )}
               </div>
@@ -1354,8 +1322,8 @@ function App() {
                       {result?.duplicates_removed > 0 && (
                         <span className={`ml-2 font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                           · {lang === 'it'
-                              ? `medie calcolate su ${result.deduped_sample_size} barche uniche`
-                              : `averages based on ${result.deduped_sample_size} unique boats`
+                              ? `calcolo basato su ${result.deduped_sample_size} barche uniche`
+                              : `based on ${result.deduped_sample_size} unique boats`
                             }
                         </span>
                       )}
@@ -1536,7 +1504,7 @@ function App() {
             <div className="flex justify-between items-center mb-4 max-w-6xl mx-auto w-full">
               <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center">
                 <MapPin className="w-6 h-6 mr-2 text-blue-500" />
-                {lang === 'it' ? 'Heatmap del Mercato' : 'Market Heatmap'} - {result.query.toUpperCase()}
+                {lang === 'it' ? 'Mappa del Mercato' : 'Market Map'} - {result.query.toUpperCase()}
               </h2>
               <button 
                 onClick={() => setIsMapExpanded(false)}
@@ -1614,10 +1582,10 @@ function App() {
               </p>
             </div>
 
-            {/* Arbitraggio Geografico */}
+            {/* Opportunità per paese */}
             {result.valuation.market_share_countries?.length > 1 && (
               <div className="mb-6">
-                <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">Arbitraggio (Market Insight)</h3>
+                <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-2">{lang === 'it' ? 'Opportunità per Paese' : 'Country Price Opportunity'}</h3>
                 <p className="text-sm leading-relaxed text-slate-700 border-l-4 border-emerald-500 pl-4 py-1 bg-emerald-50/30">
                   {(() => {
                     const countries = result.valuation.market_share_countries;
@@ -1627,8 +1595,8 @@ function App() {
                     
                     if (parseFloat(diff) > 10) {
                       return lang === 'it' 
-                        ? `Opportunità di arbitraggio tra ${cheaper.name.toUpperCase()} e ${expensive.name.toUpperCase()}. Acquistare in ${cheaper.name} potrebbe far risparmiare circa il ${diff}% rispetto ai prezzi in ${expensive.name}.`
-                        : `Arbitrage opportunity between ${cheaper.name.toUpperCase()} and ${expensive.name.toUpperCase()}. Buying in ${cheaper.name} could save about ${diff}% compared to prices in ${expensive.name}.`;
+                        ? `Differenza interessante tra ${cheaper.name.toUpperCase()} e ${expensive.name.toUpperCase()}. Acquistare in ${cheaper.name} potrebbe far risparmiare circa il ${diff}% rispetto ai prezzi in ${expensive.name}.`
+                        : `Meaningful price difference between ${cheaper.name.toUpperCase()} and ${expensive.name.toUpperCase()}. Buying in ${cheaper.name} could save about ${diff}% compared to prices in ${expensive.name}.`;
                     } else {
                       return lang === 'it'
                         ? `Mercato europeo stabile e bilanciato tra i vari paesi analizzati (${countries.map((c:any) => c.name).join(', ')}).`
