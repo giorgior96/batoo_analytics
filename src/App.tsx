@@ -196,6 +196,27 @@ const getBoatPortalSources = (boat: any): string[] => {
     : (boat.source ? [boat.source] : []);
   return Array.from(new Set<string>(sources.filter(Boolean).map(String)));
 };
+const getBoatPortalLinks = (boat: any): { source: string; url: string }[] => {
+  const links = Array.isArray(boat?.portal_links)
+    ? boat.portal_links
+        .filter((link: any) => link?.source && link?.url)
+        .map((link: any) => ({ source: String(link.source), url: String(link.url) }))
+    : [];
+
+  if (links.length > 0) {
+    const seen = new Set<string>();
+    return links.filter((link: { source: string; url: string }) => {
+      const key = `${link.source.toLowerCase()}|${link.url}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  return boat?.url
+    ? [{ source: boat.source || 'Annuncio', url: String(boat.url) }]
+    : [];
+};
 const groupSellerListingsForDisplay = (listings: any[] = []) => {
   const groups = new Map<string, any>();
 
@@ -288,6 +309,7 @@ function App() {
   const [evaluateListingsPage, setEvaluateListingsPage] = useState(1);
   const [evaluateListingsSort, setEvaluateListingsSort] = useState('year_desc');
   const [evaluateListingsLoading, setEvaluateListingsLoading] = useState(false);
+  const [portalPickerBoat, setPortalPickerBoat] = useState<any>(null);
 
   // --- Map ---
   const [isMapExpanded, setIsMapExpanded] = useState(false);
@@ -307,6 +329,11 @@ function App() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   }, []);
   const removeToast = useCallback((id: string) => setToasts(prev => prev.filter(t => t.id !== id)), []);
+
+  const openPortalPicker = useCallback((boat: any) => {
+    if (getBoatPortalLinks(boat).length === 0) return;
+    setPortalPickerBoat(boat);
+  }, []);
 
   // --- Recent searches helper ---
   const addRecentSearch = useCallback((q: string) => {
@@ -914,7 +941,7 @@ function App() {
                 <div className="divide-y divide-slate-700/20">
                   {groupSellerListingsForDisplay(sellerListings.listings).map((boat: any, i: number) => (
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
-                      <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
+                      <div onClick={() => openPortalPicker(boat)} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
                         <img
                           src={getBoatImageSrc(boat, sellerListings.listings)}
                           alt=""
@@ -959,9 +986,9 @@ function App() {
                           )}
                           {boat.status === false && <span className="text-[10px] font-bold text-red-500 mt-0.5">{lang === 'it' ? 'RIMOSSO' : 'REMOVED'}</span>}
                         </div>
-                        <a href={boat.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="ml-2 p-2 rounded-lg hover:bg-blue-500/10 text-slate-400 hover:text-blue-500 transition-colors">
+                        <button type="button" onClick={e => { e.stopPropagation(); openPortalPicker(boat); }} className="ml-2 p-2 rounded-lg hover:bg-blue-500/10 text-slate-400 hover:text-blue-500 transition-colors">
                           <ExternalLink className="w-4 h-4" />
-                        </a>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1500,7 +1527,7 @@ function App() {
                 <div className="divide-y divide-slate-700/20">
                   {displayEvaluateListings.map((boat: any, i: number) => (
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
-                      <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
+                      <div onClick={() => openPortalPicker(boat)} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
                         <img
                           src={getBoatImageSrc(boat, evaluateListings.listings)}
                           alt=""
@@ -1550,9 +1577,9 @@ function App() {
                           )}
                           {boat.status === false && <span className="block text-[10px] font-bold text-red-500">{lang === 'it' ? 'RIMOSSO' : 'REMOVED'}</span>}
                         </div>
-                        <a href={boat.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="ml-2 p-2 rounded-lg hover:bg-blue-500/10 text-slate-400 hover:text-blue-500 transition-colors">
+                        <button type="button" onClick={e => { e.stopPropagation(); openPortalPicker(boat); }} className="ml-2 p-2 rounded-lg hover:bg-blue-500/10 text-slate-400 hover:text-blue-500 transition-colors">
                           <ExternalLink className="w-4 h-4" />
-                        </a>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -1637,6 +1664,77 @@ function App() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Portal selection modal */}
+        {portalPickerBoat && (
+          <div
+            className="fixed inset-0 z-[9998] bg-slate-950/25 backdrop-blur-sm p-4 flex items-center justify-center animate-[fadeInUp_0.15s_ease-out]"
+            onClick={() => setPortalPickerBoat(null)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              className={`${themeClasses.cardBg} border ${themeClasses.cardBorder} shadow-2xl rounded-3xl w-full max-w-md overflow-hidden`}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className={`px-5 py-4 border-b ${themeClasses.cardBorder} flex items-start justify-between gap-4`}>
+                <div className="min-w-0">
+                  <p className={`text-[10px] uppercase font-bold tracking-widest ${themeClasses.textSubtle}`}>
+                    {lang === 'it' ? 'Scegli portale' : 'Choose portal'}
+                  </p>
+                  <h3 className={`mt-1 text-lg font-black truncate ${themeClasses.textMain}`}>
+                    {portalPickerBoat.builder} {portalPickerBoat.model}
+                  </h3>
+                  <p className={`text-xs ${themeClasses.textSubtle}`}>
+                    {[portalPickerBoat.year_built, portalPickerBoat.length ? `${portalPickerBoat.length}m` : '', portalPickerBoat.country].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPortalPickerBoat(null)}
+                  className={`p-2 rounded-xl ${themeClasses.hoverBg} ${themeClasses.textSubtle} transition-colors`}
+                  aria-label={lang === 'it' ? 'Chiudi' : 'Close'}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-3 space-y-2 max-h-[60vh] overflow-y-auto">
+                {getBoatPortalLinks(portalPickerBoat).map((link, idx) => {
+                  const logoUrl = getSourceLogoUrl(link.source);
+                  const label = getSourceLabel(link.source);
+
+                  return (
+                    <a
+                      key={`${link.source}-${idx}`}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setPortalPickerBoat(null)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${themeClasses.cardBorder} ${themeClasses.hoverBg} transition-colors`}
+                    >
+                      <span
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: getSourceColor(link.source) + '18' }}
+                      >
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="" className="w-5 h-5 rounded object-contain" loading="lazy" />
+                        ) : (
+                          <ExternalLink className="w-5 h-5" style={{ color: getSourceColor(link.source) }} />
+                        )}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className={`block text-sm font-bold truncate ${themeClasses.textMain}`}>{label}</span>
+                        <span className={`block text-xs truncate ${themeClasses.textSubtle}`}>{link.url}</span>
+                      </span>
+                      <ExternalLink className={`w-4 h-4 shrink-0 ${themeClasses.textSubtle}`} />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
