@@ -327,6 +327,12 @@ function App() {
     if (sortOrder === 'price_desc') return arr.sort((a: any, b: any) => b.price_eur - a.price_eur);
     return arr.sort((a: any, b: any) => (b.year_built || 0) - (a.year_built || 0));
   }, [result, sortOrder, priceMin, priceMax]);
+  const displayComparables = useMemo(() => (
+    sortListingsForDisplay(groupSellerListingsForDisplay(sortedComparables))
+  ), [sortedComparables]);
+  const displayEvaluateListings = useMemo(() => (
+    evaluateListings?.listings ? groupSellerListingsForDisplay(evaluateListings.listings) : []
+  ), [evaluateListings]);
 
   // --- Personal estimate ---
   const personalEstimate = useMemo(() => {
@@ -1441,12 +1447,15 @@ function App() {
                 <div>
                   <h3 className="font-semibold text-sm">
                     {evaluateListings
-                      ? `${evaluateListings.total.toLocaleString(numberLocale)} ${lang === 'it' ? 'annunci trovati' : 'listings found'} (${lang === 'it' ? 'tutti i portali' : 'all portals'})`
+                      ? `${evaluateListings.total.toLocaleString(numberLocale)} ${lang === 'it' ? 'barche trovate' : 'boats found'} (${lang === 'it' ? 'tutti i portali' : 'all portals'})`
                       : (lang === 'it' ? 'Caricamento annunci...' : 'Loading listings...')}
                   </h3>
                   {evaluateListings && (
                     <p className={`text-xs ${themeClasses.textSubtle}`}>
                       {lang === 'it' ? 'Pagina' : 'Page'} {evaluateListings.page} {lang === 'it' ? 'di' : 'of'} {evaluateListings.total_pages}
+                      {evaluateListings.total_raw > evaluateListings.total && (
+                        <span> · {evaluateListings.total_raw.toLocaleString(numberLocale)} {lang === 'it' ? 'pubblicazioni' : 'publications'}</span>
+                      )}
                       {evaluateListings.outlier_range && (
                         <span className="ml-2 text-amber-500">
                           · {lang === 'it' ? 'range di mercato' : 'market range'}: {formatPrice(evaluateListings.outlier_range.p5)}–{formatPrice(evaluateListings.outlier_range.p95)}
@@ -1487,9 +1496,9 @@ function App() {
                 <div className="flex items-center justify-center py-16">
                   <div className="animate-spin h-8 w-8 border-b-2 border-blue-500 rounded-full" />
                 </div>
-              ) : evaluateListings?.listings?.length > 0 ? (
+              ) : displayEvaluateListings.length > 0 ? (
                 <div className="divide-y divide-slate-700/20">
-                  {sortListingsForDisplay(evaluateListings.listings).map((boat: any, i: number) => (
+                  {displayEvaluateListings.map((boat: any, i: number) => (
                     <div key={i} className={`flex flex-col border-b last:border-b-0 ${isDark ? 'border-slate-800' : 'border-slate-100'} ${themeClasses.hoverBg} transition-colors`}>
                       <div onClick={() => window.open(boat.url, '_blank', 'noreferrer')} className="flex items-center gap-4 px-5 py-3.5 cursor-pointer group">
                         <img
@@ -1507,20 +1516,19 @@ function App() {
                             <span>{boat.year_built || '—'}</span>
                             {boat.length && <span>· {boat.length}m</span>}
                             {boat.country && <span>· {boat.country}</span>}
-                            {boat.source && (
-                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: getSourceColor(boat.source) + '22', color: getSourceColor(boat.source) }}>
-                                {boat.source}
+                            {getBoatPortalSources(boat).map(source => (
+                              <span key={source} className="px-1.5 py-0.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: getSourceColor(source) + '22', color: getSourceColor(source) }}>
+                                {source}
+                              </span>
+                            ))}
+                            {boat.raw_listing_count > 1 && (
+                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-500'}`}>
+                                {lang === 'it' ? `${boat.raw_listing_count} pubblicazioni` : `${boat.raw_listing_count} publications`}
                               </span>
                             )}
                             {boat.is_outlier && (
                               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
                                 ⚠ {lang === 'it' ? 'fuori mercato' : 'out of market'}
-                              </span>
-                            )}
-                            {boat.is_duplicate && (
-                              <span title={lang === 'it' ? 'Escluso dalle medie: stessa barca rilevata su altro portale/broker' : 'Excluded from averages: same boat detected on another portal/broker'}
-                                className={`px-1.5 py-0.5 rounded-md text-[9px] uppercase font-extrabold tracking-wider border border-dashed cursor-help ${isDark ? 'text-slate-500 border-slate-600 bg-slate-800/40' : 'text-slate-400 border-slate-300 bg-slate-50'}`}>
-                                ⊘ {lang === 'it' ? 'duplicato' : 'duplicate'}
                               </span>
                             )}
                           </div>
@@ -1723,7 +1731,7 @@ function App() {
             <div>
               <h3 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-2">{lang === "it" ? "Top 5 Annunci Recenti Rilevati" : "Top 5 Recent Listings Detected"}</h3>
               <div className="space-y-2">
-                {sortListingsForDisplay(result.comparables).slice(0, 5).map((boat: any, idx: number) => (
+                {displayComparables.slice(0, 5).map((boat: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
                     <div className="flex items-center space-x-4">
                        <img
@@ -1736,7 +1744,7 @@ function App() {
                        />
                        <div>
                          <p className={`font-bold text-xs text-slate-800 ${boat.status === false ? 'line-through opacity-60' : ''}`}>{boat.builder} {boat.model}</p>
-                         <p className="text-[10px] text-slate-500 mt-0.5 font-medium">{lang === "it" ? "Anno" : "Year"}: {boat.year_built} &bull; {lang === "it" ? "Luogo" : "Location"}: {boat.country || "N/D"} {boat.status === false ? (lang === "it" ? "(Rimosso)" : "(Removed)") : ""} {boat.source && `• ${lang === "it" ? "Fonte" : "Source"}: ${boat.source}`}</p>
+                         <p className="text-[10px] text-slate-500 mt-0.5 font-medium">{lang === "it" ? "Anno" : "Year"}: {boat.year_built} &bull; {lang === "it" ? "Luogo" : "Location"}: {boat.country || "N/D"} {boat.status === false ? (lang === "it" ? "(Rimosso)" : "(Removed)") : ""} {getBoatPortalSources(boat).length > 0 && `• ${lang === "it" ? "Portali" : "Portals"}: ${getBoatPortalSources(boat).join(', ')}`}</p>
                        </div>
                     </div>
                     <div className={`font-black text-sm ${boat.status === false ? 'text-slate-400 line-through' : 'text-blue-600'}`}>
@@ -1752,19 +1760,19 @@ function App() {
             </div>
 
             {/* SECONDA PAGINA: Lista Completa */}
-            {result.comparables.length > 5 && (
+            {displayComparables.length > 5 && (
               <div style={{ pageBreakBefore: 'always' }} className="pt-8">
                  <div className="flex justify-between items-center mb-6 border-b-2 border-slate-200 pb-4">
                   <div className="flex items-center">
                     <h2 className="text-xl font-black text-slate-800">{lang === "it" ? "Lista Completa Imbarcazioni Rilevate" : "Complete List of Detected Listings"}</h2>
                   </div>
                   <div className="text-right text-xs text-slate-500 font-medium">
-                    {result.comparables.length} {lang === "it" ? "Annunci" : "Listings"}
+                    {displayComparables.length} {lang === "it" ? "Barche" : "Boats"}
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  {sortListingsForDisplay(result.comparables).map((boat: any, idx: number) => (
+                  {displayComparables.map((boat: any, idx: number) => (
                     <div key={`full-${idx}`} className="flex justify-between items-center py-3 border-b border-slate-100 last:border-0">
                       <div className="flex items-center space-x-4">
                          <img
@@ -1777,7 +1785,7 @@ function App() {
                          />
                          <div className="flex flex-col">
                            <p className={`font-bold text-sm text-slate-800 ${boat.status === false ? 'line-through opacity-60' : ''}`}>{boat.builder} {boat.model}</p>
-                           <p className="text-xs text-slate-500 mt-0.5 font-medium">{lang === "it" ? "Anno" : "Year"}: {boat.year_built} &bull; {lang === "it" ? "Luogo" : "Location"}: {boat.country || "N/D"} {boat.status === false ? (lang === "it" ? "(Rimosso)" : "(Removed)") : ""} {boat.source && `• ${lang === "it" ? "Fonte" : "Source"}: ${boat.source}`}</p>
+                           <p className="text-xs text-slate-500 mt-0.5 font-medium">{lang === "it" ? "Anno" : "Year"}: {boat.year_built} &bull; {lang === "it" ? "Luogo" : "Location"}: {boat.country || "N/D"} {boat.status === false ? (lang === "it" ? "(Rimosso)" : "(Removed)") : ""} {getBoatPortalSources(boat).length > 0 && `• ${lang === "it" ? "Portali" : "Portals"}: ${getBoatPortalSources(boat).join(', ')}`}</p>
                            <a href={boat.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-500 hover:text-blue-700 underline mt-1 font-semibold flex items-center gap-1">
                              {lang === "it" ? "Clicca qui per visionare" : "Click here to view"} <ChevronRight className="w-3 h-3" />
                            </a>
