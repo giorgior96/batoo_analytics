@@ -67,6 +67,12 @@ import EuropeMap from './EuropeMap';
 // --- Types ---
 type SortOrder = 'year_desc' | 'price_asc' | 'price_desc';
 type Toast = { id: string; message: string; type: 'success' | 'error' | 'info' };
+type ApiStatus = {
+  data_source?: string;
+  sqlite_path?: string;
+  total_boats?: number;
+  deduped_boats?: number;
+};
 
 // --- Constants ---
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -107,6 +113,7 @@ function App() {
   const [error, setError] = useState('');
 
   const [totalBoatsDB, setTotalBoatsDB] = useState<number>(0);
+  const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
 
   // --- Broker / Advanced filters ---
   const [activeTab, setActiveTab] = useState<'model' | 'broker'>('model');
@@ -195,6 +202,7 @@ function App() {
   // Main data loading effect
   useEffect(() => {
     axios.get(`${API_BASE_URL}/`).then(res => {
+      setApiStatus(res.data);
       if (res.data?.total_boats) setTotalBoatsDB(res.data.total_boats);
     }).catch(console.error);
 
@@ -517,6 +525,22 @@ function App() {
                   </span>
                   <span className={`text-sm font-semibold ${themeClasses.textMuted}`}>{lang === 'it' ? '+ barche analizzate' : '+ boats analyzed'}</span>
                 </div>
+                {apiStatus?.data_source === 'sqlite' && (
+                  <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${isDark ? 'bg-emerald-400/10 text-emerald-300' : 'bg-emerald-50 text-emerald-700'}`}>
+                      <ShieldCheck className="w-3 h-3" />
+                      SQLite Search DB
+                    </span>
+                    <span className={`px-2 py-1 rounded-full ${isDark ? 'bg-blue-400/10 text-blue-300' : 'bg-blue-50 text-blue-700'}`}>
+                      {lang === 'it' ? 'Dedup Search' : 'Search dedup'}
+                    </span>
+                    {apiStatus.deduped_boats && (
+                      <span className={`px-2 py-1 rounded-full ${isDark ? 'bg-slate-700 text-slate-300' : 'bg-white/80 text-slate-600'}`}>
+                        {apiStatus.deduped_boats.toLocaleString(numberLocale)} {lang === 'it' ? 'uniche' : 'unique'}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <p className={`text-base sm:text-lg md:text-xl ${themeClasses.textMuted} max-w-xl mx-auto font-light leading-relaxed px-2`}>
                 {lang === 'it' ? "L'intelligenza artificiale per il mercato nautico." : "Artificial intelligence for the nautical market."}<br className="hidden md:block"/> 
@@ -1134,15 +1158,15 @@ function App() {
                 )}
               </div>
 
-              {/* Box Nazioni con Mappa (Leaflet) */}
+              {/* Heatmap mercato per nazione */}
               <div className={`${themeClasses.cardBg} backdrop-blur-xl border ${themeClasses.cardBorder} p-6 rounded-3xl shadow-lg flex flex-col h-[380px] md:h-[420px] overflow-hidden`}>
                 <p className={`${themeClasses.textSubtle} font-medium text-xs mb-3 uppercase tracking-widest flex items-center shrink-0`}>
-                   <MapPin className="w-3.5 h-3.5 mr-1.5"/> {lang === 'it' ? 'Arbitraggio per Nazione' : 'Arbitrage by Country'}
+                   <MapPin className="w-3.5 h-3.5 mr-1.5"/> {lang === 'it' ? 'Heatmap Mercato per Nazione' : 'Market Heatmap by Country'}
                 </p>
                 {result.valuation.market_share_countries?.length > 0 ? (
                   <div className="flex-1 w-full relative flex flex-col min-h-0">
                     <div className="flex-1 w-full rounded-xl overflow-hidden mb-3 shadow-inner border border-slate-500/20 bg-slate-200 min-h-0 relative group">
-                       <EuropeMap countriesData={result.valuation.market_share_countries} listings={result.comparables} isDark={isDark} lang={lang} />
+                       <EuropeMap countriesData={result.valuation.market_share_countries} isDark={isDark} lang={lang} />
                        <button 
                          onClick={() => setIsMapExpanded(true)} 
                          className="absolute top-2 right-2 p-2 bg-white/90 dark:bg-slate-800/90 rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-[400] text-slate-800 dark:text-slate-200 hover:scale-105"
@@ -1229,6 +1253,14 @@ function App() {
                         : `${result.duplicates_removed} cross-portal duplicates excluded from averages`
                       }
                     </span>
+                  </div>
+                )}
+                {apiStatus?.data_source === 'sqlite' && (
+                  <div className={`flex items-center gap-1.5 text-[10px] font-semibold mt-1.5 px-2 py-1 rounded-lg w-fit ${
+                    isDark ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  }`}>
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>{lang === 'it' ? 'SQLite + dedup Batoo Search attivi' : 'SQLite + Batoo Search dedup active'}</span>
                   </div>
                 )}
               </div>
@@ -1504,7 +1536,7 @@ function App() {
             <div className="flex justify-between items-center mb-4 max-w-6xl mx-auto w-full">
               <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center">
                 <MapPin className="w-6 h-6 mr-2 text-blue-500" />
-                {lang === 'it' ? 'Mappa delle Imbarcazioni' : 'Boats Map'} - {result.query.toUpperCase()}
+                {lang === 'it' ? 'Heatmap del Mercato' : 'Market Heatmap'} - {result.query.toUpperCase()}
               </h2>
               <button 
                 onClick={() => setIsMapExpanded(false)}
@@ -1515,7 +1547,7 @@ function App() {
               </button>
             </div>
             <div className="flex-1 w-full max-w-6xl mx-auto bg-slate-200 dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl relative">
-               <EuropeMap countriesData={result.valuation.market_share_countries} listings={result.comparables} isDark={isDark} lang={lang} />
+               <EuropeMap countriesData={result.valuation.market_share_countries} isDark={isDark} lang={lang} />
             </div>
           </div>
         )}
